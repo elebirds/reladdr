@@ -1,0 +1,19 @@
+# 生成两种三形状布局并运行原图、空白与颜色错配对照；仅用于工程初调。
+schema_version: 1
+experiment:
+  id: E01_smoke
+  protocol_version: "engineering-v1"
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    families: 1
+    max_new_tokens: 8
+    image_conditions: [original, blank, mismatch]
+run:
+  seed: 19
+  output_root: ../runs
+  label: e01-smoke
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: "off"

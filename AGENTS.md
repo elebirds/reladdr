@@ -5,7 +5,9 @@
 
 The shared runtime is implemented with configuration validation, local run records,
 artifacts, provenance, CLI tools, and optional explicit MLflow sync/retry.
-Research packages remain descriptive markers: no scene generator, model adapter, interventions, or search algorithms exist.
+A three-shape E01 engineering smoke now has deterministic scenes, ground truth, a
+Qwen2-VL Instruct BF16 adapter and local result recording. Formal split/held-out
+protocols, activation interventions and search algorithms are not implemented.
 Keep runtime behavior separate from experiment-specific scientific protocols. Add real
 functionality with tests; do not create dummy experiment entry points.
 
@@ -18,8 +20,8 @@ functionality with tests; do not create dummy experiment entry points.
   object-store uploads. Parameters/metrics and artifact policy are independent; new
   configs explicitly use `artifacts: "off"`. Proxy mode must match the remote run
   artifact URI; never silently fall back or reconfigure the server.
-- GPU dependencies are not installed
-  by the scaffold; select their CUDA build and versions when implementing the adapter.
+- `gpu` pins Torch 2.8.0, torchvision 0.23.0, Transformers 4.57.1 and Accelerate 1.11.0.
+  Do not install this extra on the Mac just to run CPU tests. Image rendering uses Pillow.
 - Keep project dependencies local. Do not modify shared shell/runtime configuration.
 
 ## Chinese comments
