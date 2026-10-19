@@ -4,7 +4,7 @@ import json
 from collections.abc import Iterable
 from pathlib import Path
 
-from reladdr.runtime._io import atomic_json, clean_json, json_text, run_path
+from reladdr.runtime._io import atomic_json, clean_json, json_text, run_path, sync_content_digest
 from reladdr.runtime.security import redact_text
 
 
@@ -55,6 +55,9 @@ class ArtifactStore:
             "size_bytes": stat.st_size,
             "mtime_ns": stat.st_mtime_ns,
         }
+        if sync:
+            # Linux 实测同长度改写可能保留相同时间戳；白名单文件需要内容完整性依据。
+            entry["content_sha256"] = sync_content_digest(path)
         self._entries.append(entry)
         try:
             self._save_manifest()

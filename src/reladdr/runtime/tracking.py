@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
-from reladdr.runtime._io import atomic_json, run_path
+from reladdr.runtime._io import atomic_json, run_path, sync_content_digest
 from reladdr.runtime.context import read_run
 from reladdr.runtime.security import redact_text
 
@@ -92,6 +92,11 @@ def _upload_files(root: Path, record: dict, limit: int) -> list[tuple[str, Path,
         stat = path.stat()
         if stat.st_size != entry["size_bytes"] or stat.st_mtime_ns != entry["mtime_ns"]:
             raise TrackingError("登记后的产物已改变，请保留原始 run 并创建新的结果记录")
+        if stat.st_size > limit:
+            raise TrackingError("同步文件缺失或超过单文件限制，请另行保存大数据并输出小型摘要")
+        # 新登记的白名单文件校验内容；旧清单没有摘要时保留原来的元数据契约。
+        if "content_sha256" in entry and sync_content_digest(path) != entry["content_sha256"]:
+            raise TrackingError("登记后的产物内容已改变，请保留原始 run 并创建新的结果记录")
         seen.add(relative)
         uploads.append((relative, path, Path(relative).parent.as_posix()))
     # 任何本地条件不成立时都先拒绝，避免远程创建后才发现不允许上传。

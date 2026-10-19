@@ -2,6 +2,7 @@
 
 import fcntl
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -518,3 +519,15 @@ def test_archive_failure_cursor_is_preserved_when_toggling_off(tracked_run):
     assert state["status"] == "synced"
     assert len(client.uploads) == len(state["artifacts_synced"])
     assert len(client.runs) == 1
+
+
+def test_same_size_same_timestamp_rewrite_is_rejected(tracked_run):
+    path = tracked_run / "artifacts/summary.json"
+    before = path.stat()
+    original = path.read_bytes()
+    path.write_bytes(b"x" * len(original))
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    client = ControlledClient()
+    with pytest.raises(TrackingError, match="内容已改变"):
+        sync_run(tracked_run, client=client)
+    assert not client.runs

@@ -20,6 +20,7 @@ def test_private_files_and_sync_allowlist(runtime_config):
     entries = read_run(run.run_dir)["manifest"]["artifacts"]
     selected = {entry["path"] for entry in entries if entry["sync"]}
     assert selected == {"artifacts/summary.json", "artifacts/plots/result.svg"}
+    assert all(("content_sha256" in entry) == entry["sync"] for entry in entries)
 
 
 @pytest.mark.parametrize("name", ["../escape", "/absolute", "nested/../../escape", "."])

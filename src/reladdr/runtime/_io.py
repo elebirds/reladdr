@@ -1,5 +1,6 @@
 """提供有限数值 JSON、原子状态写入和 run 内路径约束。"""
 
+import hashlib
 import json
 import os
 import tempfile
@@ -63,3 +64,9 @@ def run_path(root: Path, relative: str) -> Path:
     if not resolved.is_relative_to(root.resolve()) or resolved == root.resolve():
         raise ValueError("产物路径不能越出 run 目录")
     return resolved
+
+
+def sync_content_digest(path: Path) -> str:
+    """只为选定归档文件校验登记后的内容完整性，防止同长度/同时间戳改写漏检。"""
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
