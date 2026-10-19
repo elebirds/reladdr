@@ -1,0 +1,29 @@
+# Python and local development
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.uv-cache/
+.ipynb_checkpoints/
+.DS_Store
+/dist/
+/build/
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.local.toml
+*.local.yaml
+
+# Generated datasets, model checkpoints, and run artifacts
+/data/
+/runs/
+/checkpoints/
+/artifacts/
+/mlruns/
+/mlartifacts/
+/mlflow.db*
