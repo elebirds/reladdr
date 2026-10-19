@@ -18,7 +18,8 @@ pytest 与 Ruff。配置、生命周期、日志、产物、来源和 CLI 均有
 
 ## 修改依赖时一起更新锁文件
 
-开发工具用 `uv add --dev`，运行依赖用 `uv add`，可选客户端用 `uv add --optional tracking`。
+开发工具用 `uv add --dev`，运行依赖用 `uv add`，可选客户端用 `uv add --optional tracking`，
+OSS 直连依赖用 `uv add --optional oss`。
 依赖声明与 `uv.lock` 同次提交。普通复现不全量升级；使用 `uv run --locked`。
 CI 固定 uv 0.12.10；更换构建工具时同步检查 CI 与构建后端。
 
@@ -55,6 +56,14 @@ uv run --locked --extra tracking python -c "import mlflow; print(mlflow.__versio
 客户端使用 [mlflow-skinny](https://pypi.org/project/mlflow-skinny/)，不在 GPU 机器部署服务端。
 `.env.example` 仅说明变量，不自动加载；凭据通过批准机制注入。
 本地结果先完整落盘，不启用 autolog，不默认上传模型、数据和全量激活。
+新配置显式设置 `artifacts: "off"`，参数/指标与文件同步分别开关。仅直连 OSS/S3 时额外安装：
+
+```sh
+uv sync --locked --extra tracking --extra oss
+```
+
+`oss` 提供 boto3；归档关闭或使用代理时不需要它，也不检查客户端 OSS 凭据。
+代理模式要求对应服务端/实验已经使用代理产物地址，客户端开关不会修改服务端配置。
 已提供显式同步和失败重试，见[运行层用法](runtime.md)。可选 SDK 的离线闭环检查：
 
 ```sh
@@ -62,4 +71,5 @@ uv run --locked --extra tracking pytest tests/runtime/test_tracking_sdk.py
 ```
 
 该检查只使用临时本地文件后端，创建/记录/上传/读回均已覆盖。默认 CI 检查不安装 tracking；
-独立 job 安装可选依赖检查 SDK 接口。真实服务认证、兼容性和读回仍在实际接入时验证。
+独立 job 安装可选依赖检查 SDK 接口。实际服务已验证仅参数/指标同步和读回；
+实际 OSS 直连/代理的上传与下载尚未验证，不能用离线 SDK 通过代替文件链路验证。

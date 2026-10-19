@@ -7,7 +7,7 @@
 机制研究与联合干预集合搜索是两条独立研究线，共享模型适配和记录基础设施。
 
 公共运行层已实现：配置校验、本地运行生命周期、日志、指标、产物与来源记录，以及可选
-MLflow 显式同步和重试。
+MLflow 显式同步和重试。参数/指标独立开关，文件归档可选关闭、OSS 直连或服务端代理。
 尚未实现数据生成、模型调用、激活干预或搜索算法，也没有模型实验结果。
 
 ## 开始开发
@@ -36,10 +36,12 @@ uv run --locked reladdr run inspect --json path/to/run
 已结束且配置中启用 MLflow 的 run，可以在注入批准的服务地址与认证后显式同步：
 
 ```sh
-uv run --locked --extra tracking reladdr tracking sync path/to/run
+uv run --locked --extra tracking reladdr tracking sync path/to/run --params-metrics --artifacts off
 ```
 
-真实 SDK 已通过临时本地后端验证；尚未连接实际服务器。同步不会重跑实验。
+初期建议关闭文件归档。真实 SDK 已通过临时本地后端的完整读回检查；实际 Tracking 服务的
+参数/指标与重复同步也已验证。真实 OSS 文件链路尚未验证。同步不重跑实验，具体配置见
+[运行层用法](docs/runtime.md#参数指标和文件归档分别开关)。
 
 ## 公共能力与实验协议分开
 

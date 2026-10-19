@@ -113,39 +113,108 @@ uv run --locked reladdr run inspect --json path/to/run
 中的密码/令牌实际值；用户名不作为任意文本遮盖词，避免损坏正常路径。不会加载 `.env`
 或转储整个环境。实验仍须避免记录其他未声明的私有内容。
 
-## 本地运行结束后，再显式同步 MLflow
+## 参数/指标和文件归档分别开关
 
-配置中设置 `tracking.mode: mlflow` 和 `tracking.experiment_name`，并通过批准机制注入
-`MLFLOW_TRACKING_URI` 与所需认证，再执行：
+初期建议只同步参数/指标，不让 OSS 配置阻塞实验：
 
-```sh
-uv run --locked --extra tracking reladdr tracking sync path/to/run
+```yaml
+# 只启用 MLflow 参数/指标；所有文件继续完整保存在本地。
+tracking:
+  mode: mlflow
+  experiment_name: reladdr-E01
+  params_metrics: true
+  artifacts: "off"
 ```
 
-默认本地运行既不导入 MLflow，也不访问服务。只同步已经结束的 run；配置为 `local` 的
-历史 run 不会因环境中存在服务器地址而被自动上传。服务地址不能含 userinfo、查询或片段。
+`mode: local` 是总开关：不导入 MLflow、不访问服务，CLI 也不能借覆盖选项上传这类历史 run。
+`mode: mlflow` 时，`params_metrics` 控制参数/指标 API；`artifacts` 控制文件归档：
 
-同步包含公共参数、指标历史、配置/metadata/执行状态/指标/manifest 文件，以及 manifest
-里 `sync=True` 的产物。完整私有参数保存在配置产物，不自动展开成巨大的 MLflow 参数表。
-日志、源码快照和大激活不默认上传；单文件限制 10 MiB，超限明确报错。登记后改变的文件、
-外部符号链接和缺失文件会在远程写入前拒绝。
+| 文件归档 | 文件怎样上传 | 客户端需要什么 |
+| --- | --- | --- |
+| `"off"` | 不检查产物文件、不上传文件 | 仅同步参数/指标时只需 Tracking 服务地址与认证 |
+| `direct` | MLflow SDK 按远程 `s3://` 地址直传 OSS/S3 | `tracking`、`oss` 可选依赖及 endpoint、存储凭据 |
+| `proxy` | MLflow SDK 经服务端产物代理转存 | `tracking` 可选依赖与服务认证；客户端不需要 OSS 凭据 |
 
-`tracking.json` 独立保存 `pending/syncing/synced/failed`、远程 run ID、已确认指标游标和
-已上传文件。同步失败不改变 `status.json` 的研究执行状态。再次执行同一命令重试：
+两项都关闭时不需要服务地址或 SDK，也不创建远程 run。关闭开关不会删除已上传内容。
+YAML 中 `"off"` 必须加引号：当前安全加载器会把未加引号的 `off` 解释成布尔值，严格校验会拒绝。
 
-- 复用远程 run ID；创建响应丢失时，按稳定 UID 找回原 run。
-- 跳过已经确认的指标和文件，不重跑实验。
-- 已绑定的 run 不静默切换服务器；远程身份不符时拒绝继续。
-- 进程锁防止同一个 run 并发同步；已完全同步的 run 不重复上传。
+为兼容已有配置，省略 `artifacts` 或写 `null` 时保留原先 SDK 原生路由与文件同步行为，
+状态中记为 `native`；它不是新模式选项。新配置请明确填写上述三种模式，不靠省略关闭归档。
 
-指标提交采用“至少一次”语义：若服务器已接收指标但响应丢失，重试可能在远程历史中出现
-相同时间戳/step 的重复记录，本地原始指标不重复。同步中断保留游标，下次可继续。
-远程最终状态按本地 `completed/failed/interrupted` 映射，不把失败实验标成成功。
+## 结束后显式同步，必要时在原 run 上改策略
 
-受控故障测试覆盖重试和隔离；真实 SDK 在临时文件后端完成创建、记录、上传与读回。
-文件后端只在测试中临时显式启用，不作为实际服务部署方案。真实服务器的认证、兼容性和
-读回需在首次实际接入时验证。
+仅同步已经结束、配置中启用 MLflow 的 run。服务地址和认证通过批准机制注入，
+`MLFLOW_TRACKING_URI` 必须带 `https://` 等协议，不能含 userinfo、查询或片段。
+应用不会自动加载 `.env`；需要使用本地忽略的 `.env` 时，通过 uv 显式注入：
+
+```sh
+uv run --locked --extra tracking --env-file .env reladdr tracking sync path/to/run \
+  --params-metrics --artifacts off
+```
+
+CLI 覆盖只写入 `tracking.json`，不改原配置快照、不重跑计算。之后裸重试沿用上次策略，
+不会在一次关闭归档后又意外启用旧配置。需要补传文件时仍使用同一 run：
+
+```sh
+# 已配置好直连的客户端依赖、endpoint 与凭据后，只补传文件。
+uv run --locked --extra tracking --extra oss --env-file .env reladdr tracking sync path/to/run \
+  --no-params-metrics --artifacts direct
+
+# 远程实验已使用代理产物地址时，改走代理归档。
+uv run --locked --extra tracking --env-file .env reladdr tracking sync path/to/run \
+  --no-params-metrics --artifacts proxy
+```
+
+模式必须与该远程 run 的产物地址一致：`direct` 要求 `s3://`，`proxy` 要求
+`mlflow-artifacts:/` 或 MLflow HTTP 产物代理端点。客户端会核对，不自动回退或修改服务器。
+已有直连实验不会因服务器后来启用代理而自动迁移；应使用正确产物配置的实验。
+参见 [MLflow 的直连与代理配置](https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/)。
+
+## 同步哪些内容
+
+参数/指标同步保持原有契约：上传 `experiment.id`、`experiment.protocol_version`、`run.seed`、
+`config.schema_version` 四项公共参数，以及全部指标历史。完整实验私有参数仍保存在
+`config.resolved.json`，不猜测如何展开成 MLflow 参数表；关闭归档后，这份完整配置只在本地。
+
+启用文件归档时，上传配置、metadata、执行状态、指标和 manifest 五份记录文件，以及
+manifest 里 `sync=True` 的产物。日志、源码快照和大激活不默认上传；单文件限制 10 MiB。
+检查登记后的文件是否改变、缺失、越界或超限，不符合时明确报错。
+
+两个开关控制不同传输渠道，不会改写文件内容：即使 `params_metrics: false`，启用归档后
+配置和指标文件中仍包含原始参数/指标。关闭归档时不检查产物文件，也不导入存储客户端。
+
+## 两类进度分别保存，失败后原位重试
+
+`tracking.json` 保存本次策略、总体状态和 `params_metrics_status`、`artifacts_status`，
+并分别保存参数确认标记、指标游标、已上传文件列表。两类子状态使用
+`pending/disabled/syncing/synced/failed`；查看命令会展示实际启用的策略。
+
+- 参数/指标先同步；显式归档失败不会抹去已确认的参数与指标，下次只补未完成部分。
+- 若认证或参数/指标请求失败，停止本轮同步，不转向对象存储尝试绕过失败。
+- 可以把失败的归档切成 `off`，先完成参数/指标；之后重新启用时保留文件续传进度。
+- 复用远程 run ID；创建响应丢失时按稳定 UID 找回，不盲目新建。
+- 已绑定的 run 不静默换服务，远程身份不符时拒绝继续，进程锁防止并发同步。
+- 旧的原生路由继续在远程写入前检查全部上传文件，保留原先调用契约。
+
+同步失败不改变 `status.json` 的实验执行状态。选定渠道全部完成后，才收尾远程 run；
+远程最终状态按本地 `completed/failed/interrupted` 映射。总体 `synced` 表示选定渠道完成，
+不表示关闭的归档已上传。CLI stdout 始终为 JSON，SDK 的提示输出转到 stderr。
+
+指标提交采用“至少一次”语义：若服务器已接收但响应丢失，重试可能产生相同时间戳/step
+的远程历史重复；已确认的指标和文件会跳过，本地原始指标不重复。
+
+## 已验证到哪一步
+
+CPU 测试覆盖独立开关组合、路由核对、故障隔离、续传和旧配置兼容。真实 MLflow SDK 在
+临时文件后端验证了完整上传/读回，以及关闭归档后仅同步参数/指标、不上传文件。
+
+2026-10-19 已在实际 Tracking 服务复用专用基础设施 run，完成参数/指标读回、终态检查和
+关闭归档后的重复同步，未重复创建 run 或写入已确认指标；没有联系 OSS。
+真实 OSS 直连/代理的文件上传与下载尚未验证，需要相应客户端存储配置或服务端代理实验。
+实际接入的地址曾为裸主机名，该次检查仅在进程内补齐 HTTPS，没有修改 `.env`；正常命令
+仍要求提供完整 URI。本地实测回执留在对应忽略的 run 目录，不将认证或机器信息写入仓库。
 
 实现参考：[Pydantic 模型](https://docs.pydantic.dev/latest/concepts/models/)、
 [PyYAML 安全加载](https://pyyaml.org/wiki/PyYAMLDocumentation)、
-[MLflow 客户端接口](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.client.html)。
+[MLflow 客户端接口](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.client.html)、
+[MLflow 产物存储](https://mlflow.org/docs/latest/self-hosting/architecture/artifact-store/)。

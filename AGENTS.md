@@ -14,7 +14,11 @@ functionality with tests; do not create dummy experiment entry points.
 - Use the configured PATH and `uv`; the project pins Python in `.python-version`.
 - Use `uv run --locked` for project commands and `uv sync --locked` to restore the
   environment. Update `pyproject.toml` and `uv.lock` together for dependency changes.
-- `tracking` is an optional MLflow client extra. GPU dependencies are not installed
+- `tracking` is an optional MLflow client extra; `oss` adds boto3 only for direct
+  object-store uploads. Parameters/metrics and artifact policy are independent; new
+  configs explicitly use `artifacts: "off"`. Proxy mode must match the remote run
+  artifact URI; never silently fall back or reconfigure the server.
+- GPU dependencies are not installed
   by the scaffold; select their CUDA build and versions when implementing the adapter.
 - Keep project dependencies local. Do not modify shared shell/runtime configuration.
 

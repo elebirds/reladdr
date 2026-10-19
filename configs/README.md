@@ -18,13 +18,23 @@ run:
   log_level: INFO
 tracking:
   mode: local
+  params_metrics: true
+  artifacts: "off"
 ```
 
 - `schema_version` 当前为 1；实验 ID 为字母/数字/下划线/短横线组成的标识。
 - `protocol_version` 显式填写字符串；`seed` 是 0 至 `2**32-1` 的整数，不接受字符串或布尔值。
 - `output_root` 相对该 YAML 的目录解析，默认 `runs`。`label` 可省略。
 - `tracking.mode` 为 `local` 或 `mlflow`；后者必须提供非空 `experiment_name`。
+- `params_metrics` 是严格布尔值，独立控制参数/指标同步；`artifacts` 选择 `"off"`、
+  `direct`、`proxy`。两者都受 `mode` 总开关控制。
+- 新配置建议显式使用 `artifacts: "off"`。`off` 必须加引号；省略或 `null` 为兼容旧配置
+  仍保留原来的 SDK 文件上传路由，不表示关闭。
 - 服务地址和凭据不放在配置中。YAML 不展开环境变量、不继承其他配置、不接受重复字段。
+
+初期需要远程记录时，将 `mode` 改为 `mlflow` 并补充 `experiment_name`，保留
+`params_metrics: true` 与 `artifacts: "off"`。直连和代理要求远程实验的产物地址匹配；
+CLI 可在同一 run 上覆盖开关并记录供重试使用，见[同步用法](../docs/runtime.md#参数指标和文件归档分别开关)。
 
 公共 CLI 只检查这层结构，并明确标注未校验私有参数：
 
