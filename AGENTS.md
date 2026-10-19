@@ -17,6 +17,12 @@ or always-passing tests to make the scaffold look complete.
   by the scaffold; select their CUDA build and versions when implementing the adapter.
 - Keep project dependencies local. Do not modify shared shell/runtime configuration.
 
+## Chinese comments
+
+Handwritten source, tests, and configuration files start with a Chinese description.
+Use Chinese comments for important contracts and non-obvious logic, especially state
+transitions, data integrity, and synchronization. Keep generated lockfiles machine-managed.
+
 ## Module boundaries
 
 - `reladdr.tasks`: scene semantics, rendering, questions, labels, and grouped splits.

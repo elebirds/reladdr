@@ -547,6 +547,10 @@ wheels = [
 name = "reladdr"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "pydantic" },
+    { name = "pyyaml" },
+]
 
 [package.optional-dependencies]
 tracking = [
@@ -560,7 +564,11 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "mlflow-skinny", marker = "extra == 'tracking'", specifier = ">=3.17,<4" }]
+requires-dist = [
+    { name = "mlflow-skinny", marker = "extra == 'tracking'", specifier = ">=3.17,<4" },
+    { name = "pydantic", specifier = ">=2.12,<3" },
+    { name = "pyyaml", specifier = ">=6,<7" },
+]
 provides-extras = ["tracking"]
 
 [package.metadata.requires-dev]

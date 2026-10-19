@@ -1,10 +1,14 @@
+# 定义 RelAddr 的项目依赖、构建方式与开发检查。
 [project]
 name = "reladdr"
 version = "0.1.0"
 description = "Mechanistic research on relation-conditioned visual addressing in vision-language models."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.12,<3",
+    "pyyaml>=6,<7",
+]
 
 [project.optional-dependencies]
 tracking = ["mlflow-skinny>=3.17,<4"]
