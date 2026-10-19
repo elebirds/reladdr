@@ -4,8 +4,8 @@
 ## Current stage
 
 The shared runtime is implemented with configuration validation, local run records,
-artifacts, provenance, and read-only CLI tools. Research packages remain descriptive
-markers: no scene generator, model adapter, interventions, or search algorithms exist.
+artifacts, provenance, CLI tools, and optional explicit MLflow sync/retry.
+Research packages remain descriptive markers: no scene generator, model adapter, interventions, or search algorithms exist.
 Keep runtime behavior separate from experiment-specific scientific protocols. Add real
 functionality with tests; do not create dummy experiment entry points.
 
@@ -73,5 +73,8 @@ uv build
 ```
 
 Tests use temporary directories and never download models or contact remote services.
+The optional SDK test uses an explicitly enabled temporary file store only.
+Run `uv run --locked --extra tracking pytest tests/runtime/test_tracking_sdk.py` when
+changing the SDK integration; remote authentication and compatibility need live validation.
 Run the actual CLI and build checks as well as tests when changing its entry points.
 Optional tracking validation must not contact a server without relevant authorization.

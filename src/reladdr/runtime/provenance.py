@@ -34,7 +34,12 @@ def capture_provenance(code_root: Path | None = None) -> tuple[dict, str, dict[s
         "packages": dict(sorted(packages.items())),
         "git": {"available": False},
     }
-    directory = code_root or Path(__file__).resolve().parents[3]
+    module_file = Path(__file__).resolve()
+    directory = code_root or module_file.parents[3]
+    # wheel 位于另一个项目的虚拟环境里时，不能把那个项目的 Git 误记为包的来源。
+    if code_root is None and module_file != directory / "src/reladdr/runtime/provenance.py":
+        metadata["git"]["reason"] = "当前为已安装分发包，未显式关联源码 checkout"
+        return metadata, "", {}
     try:
         root = Path(_git(directory, "rev-parse", "--show-toplevel"))
         commit = _git(root, "rev-parse", "HEAD")

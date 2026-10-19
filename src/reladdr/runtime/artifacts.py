@@ -39,6 +39,8 @@ class ArtifactStore:
 
     def register(self, name: str, *, description: str, sync: bool = False) -> Path:
         self._check_open()
+        if not isinstance(sync, bool):
+            raise ValueError("产物同步标记必须是布尔值")
         path = run_path(self.directory, name)
         if not path.is_file():
             raise ValueError("只能登记已经写完的文件")

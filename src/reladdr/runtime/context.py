@@ -13,7 +13,7 @@ from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
 
-from reladdr.runtime._io import atomic_json, clean_json, read_json, run_path
+from reladdr.runtime._io import atomic_json, clean_json, parse_json, read_json, run_path
 from reladdr.runtime.artifacts import ArtifactStore
 from reladdr.runtime.config import LoadedConfig
 from reladdr.runtime.provenance import capture_provenance
@@ -40,7 +40,9 @@ class RunContext:
             raise ValueError("运行前必须通过实验自己的参数模型完成校验")
         generated = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
         label = config.document.run.label or config.document.experiment.id
-        self.run_id = run_id or f"{generated}-{label}-{uuid.uuid4().hex[:8]}"
+        self.run_id = (
+            run_id if run_id is not None else f"{generated}-{label}-{uuid.uuid4().hex[:8]}"
+        )
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", self.run_id):
             raise ValueError("run ID 只能包含字母、数字、下划线、短横线和点")
         if self.run_id in {".", ".."}:
@@ -187,10 +189,20 @@ class RunContext:
         """无论阶段成功与否都记录实际耗时，不自动生成其他成本数字。"""
         self._check_active()
         start = time.perf_counter()
+        body_error = None
         try:
             yield
+        except BaseException as exc:
+            body_error = exc
+            raise
         finally:
-            self.log_metric(f"phase.{name}.wall_time_s", time.perf_counter() - start, unit="s")
+            try:
+                self.log_metric(f"phase.{name}.wall_time_s", time.perf_counter() - start, unit="s")
+            except BaseException as record_error:
+                # 记录失败不能掩盖昂贵实验原先抛出的错误。
+                if body_error is None:
+                    raise
+                body_error.add_note(f"阶段耗时未保存：{type(record_error).__name__}")
 
     def _finish(self, exc: BaseException | None) -> None:
         status = "completed" if exc is None else "failed"
@@ -247,11 +259,15 @@ def read_run(directory: Path | str) -> dict:
         },
     }
     for name in ("config", "metadata", "status", "tracking", "manifest"):
-        if not isinstance(result[name], dict) or result[name].get("schema_version") != 1:
+        if (
+            not isinstance(result[name], dict)
+            or type(result[name].get("schema_version")) is not int
+            or result[name]["schema_version"] != 1
+        ):
             raise ValueError("无法读取此版本的运行记录")
     result["metrics"] = []
     with run_path(root, "metrics.jsonl").open(encoding="utf-8") as stream:
         for line in stream:
             if line.strip():
-                result["metrics"].append(json.loads(line))
+                result["metrics"].append(parse_json(line))
     return clean_json(result)

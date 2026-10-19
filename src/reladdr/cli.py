@@ -25,6 +25,10 @@ def _parser() -> argparse.ArgumentParser:
     inspect = run_commands.add_parser("inspect", help="查看已有 run，不修改执行状态")
     inspect.add_argument("directory", help="run 目录")
     inspect.add_argument("--json", action="store_true", help="输出完整的结构化记录")
+    tracking = groups.add_parser("tracking", help="显式同步已结束的 run")
+    tracking_commands = tracking.add_subparsers(dest="command", required=True)
+    sync = tracking_commands.add_parser("sync", help="将允许的本地结果同步到 MLflow")
+    sync.add_argument("directory", help="已结束且显式启用 MLflow 的 run 目录")
     return parser
 
 
@@ -58,6 +62,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"目录: {record['run_dir']}")
                 if record["status"]["status"] == "running":
                     print("该 run 仍运行中或未完整收尾；此命令不会把它标记为成功。")
+        elif args.group == "tracking":
+            from reladdr.runtime.tracking import TrackingError, sync_run
+
+            try:
+                state = sync_run(args.directory)
+            except TrackingError as exc:
+                print(f"同步失败：{exc}", file=sys.stderr)
+                return 1
+            _print_json(state)
         return 0
     except ConfigError as exc:
         print(f"配置错误：{exc}", file=sys.stderr)

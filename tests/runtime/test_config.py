@@ -132,3 +132,23 @@ def test_private_path_schema_is_not_guessed_by_runtime(config_file):
     # 路径转换由实验自己的 schema 决定，公共层不会根据字段名偷偷改值。
     with pytest.raises(ConfigError):
         load_config(source, parameter_model=PrivateSettings)
+
+
+@pytest.mark.parametrize("version", ["true", "1.0", "'1'", "2"])
+def test_schema_version_requires_exact_integer(config_file, version):
+    with pytest.raises(ConfigError, match="schema_version"):
+        load_config(config_file(f"schema_version: {version}\n"))
+
+
+@pytest.mark.parametrize("key", ["apiKey", "ClientSecret", "api-key", "Authorization"])
+def test_secret_field_aliases_are_not_a_bypass(config_file, key):
+    with pytest.raises(ConfigError) as error:
+        load_config(config_file(parameters=f"{{{key}: PRIVATE-VALUE}}"))
+    assert "PRIVATE-VALUE" not in str(error.value)
+
+
+def test_config_requires_utf8(tmp_path):
+    path = tmp_path / "invalid.yaml"
+    path.write_bytes(b"\xff\xfePRIVATE")
+    with pytest.raises(ConfigError, match="UTF-8"):
+        load_config(path)

@@ -73,3 +73,12 @@ def test_help_has_no_unimplemented_experiment_command():
     assert result.returncode == 0
     assert "config" in result.stdout
     assert "experiment" not in result.stdout
+
+
+def test_tracking_cli_requires_explicit_run_opt_in(runtime_config):
+    with RunContext(runtime_config()) as run:
+        pass
+    result = command("tracking", "sync", run.run_dir)
+    assert result.returncode == 1
+    assert "未显式启用" in result.stderr
+    assert "Traceback" not in result.stderr

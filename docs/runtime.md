@@ -32,12 +32,16 @@ with RunContext(config) as run:
     with run.time_phase("inference"):
         results = compute(config.parameters, rng=run.rng)
     run.artifacts.write_jsonl(
-        "baseline/predictions.jsonl", results.rows,
-        description="逐样本预测与真值", sync=False,
+        "baseline/predictions.jsonl",
+        results.rows,
+        description="逐样本预测与真值",
+        sync=False,
     )
     run.artifacts.write_json(
-        "baseline/summary.json", results.summary,
-        description="实验定义的汇总", sync=True,
+        "baseline/summary.json",
+        results.summary,
+        description="实验定义的汇总",
+        sync=True,
     )
     for name, value in results.metrics.items():
         run.log_metric(name, value)
@@ -73,7 +77,8 @@ metadata 公共部分不允许实验覆盖。`record_metadata(section, values)` 
 
 代码来源取自项目源码所在 checkout，不取配置文件所在仓库。保存 commit、dirty 列表、
 相关源码差异与未跟踪文本源码快照；差异和源码快照默认只留本地。不在 Git checkout 中时
-明确记录来源不可用；正式结论应从已提交版本运行。不会收集完整环境变量或任意命令行。
+明确记录来源不可用；wheel 安装不会借用其所在目录的 Git 身份。正式结论应从已提交版本
+运行。不会收集完整环境变量或任意命令行。
 
 ## 失败和中断也是有效运行记录
 
@@ -105,6 +110,42 @@ uv run --locked reladdr run inspect --json path/to/run
 
 服务地址与认证通过批准的环境变量提供，不支持把 `tracking_uri`、密码、API key 等写入
 公共或私有配置。敏感字段报错时不回显值；日志、异常消息和 JSON 会遮盖明确认证环境变量
-中的实际值。不会加载 `.env` 或转储整个环境。实验仍须避免记录其他未声明的私有内容。
+中的密码/令牌实际值；用户名不作为任意文本遮盖词，避免损坏正常路径。不会加载 `.env`
+或转储整个环境。实验仍须避免记录其他未声明的私有内容。
 
-MLflow 客户端是可选依赖；具体同步入口在适配器接入后补充，不影响本地运行和结果读取。
+## 本地运行结束后，再显式同步 MLflow
+
+配置中设置 `tracking.mode: mlflow` 和 `tracking.experiment_name`，并通过批准机制注入
+`MLFLOW_TRACKING_URI` 与所需认证，再执行：
+
+```sh
+uv run --locked --extra tracking reladdr tracking sync path/to/run
+```
+
+默认本地运行既不导入 MLflow，也不访问服务。只同步已经结束的 run；配置为 `local` 的
+历史 run 不会因环境中存在服务器地址而被自动上传。服务地址不能含 userinfo、查询或片段。
+
+同步包含公共参数、指标历史、配置/metadata/执行状态/指标/manifest 文件，以及 manifest
+里 `sync=True` 的产物。完整私有参数保存在配置产物，不自动展开成巨大的 MLflow 参数表。
+日志、源码快照和大激活不默认上传；单文件限制 10 MiB，超限明确报错。登记后改变的文件、
+外部符号链接和缺失文件会在远程写入前拒绝。
+
+`tracking.json` 独立保存 `pending/syncing/synced/failed`、远程 run ID、已确认指标游标和
+已上传文件。同步失败不改变 `status.json` 的研究执行状态。再次执行同一命令重试：
+
+- 复用远程 run ID；创建响应丢失时，按稳定 UID 找回原 run。
+- 跳过已经确认的指标和文件，不重跑实验。
+- 已绑定的 run 不静默切换服务器；远程身份不符时拒绝继续。
+- 进程锁防止同一个 run 并发同步；已完全同步的 run 不重复上传。
+
+指标提交采用“至少一次”语义：若服务器已接收指标但响应丢失，重试可能在远程历史中出现
+相同时间戳/step 的重复记录，本地原始指标不重复。同步中断保留游标，下次可继续。
+远程最终状态按本地 `completed/failed/interrupted` 映射，不把失败实验标成成功。
+
+受控故障测试覆盖重试和隔离；真实 SDK 在临时文件后端完成创建、记录、上传与读回。
+文件后端只在测试中临时显式启用，不作为实际服务部署方案。真实服务器的认证、兼容性和
+读回需在首次实际接入时验证。
+
+实现参考：[Pydantic 模型](https://docs.pydantic.dev/latest/concepts/models/)、
+[PyYAML 安全加载](https://pyyaml.org/wiki/PyYAMLDocumentation)、
+[MLflow 客户端接口](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.client.html)。

@@ -7,7 +7,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, ValidationError, field_validator
 
-from reladdr.runtime.security import reject_secret_fields
+from reladdr.runtime.security import redact_text, reject_secret_fields
 
 
 class ConfigError(ValueError):
@@ -22,7 +22,7 @@ class StrictModel(BaseModel):
 
 class ExperimentIdentity(StrictModel):
     id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
-    protocol_version: str = Field(min_length=1)
+    protocol_version: str = Field(min_length=1, pattern=r"\S")
     parameters: dict[str, JsonValue] = Field(default_factory=dict)
 
 
@@ -60,6 +60,14 @@ class ConfigDocument(StrictModel):
     run: RunSettings
     tracking: TrackingSettings = Field(default_factory=TrackingSettings)
 
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def exact_schema_version(cls, value: object) -> int:
+        # Literal[1] 本身会接受 True/1.0；版本号必须明确为整数，不能靠相等关系转换。
+        if type(value) is not int or value != 1:
+            raise ValueError("schema_version 必须是整数 1")
+        return value
+
 
 class _UniqueSafeLoader(yaml.SafeLoader):
     """安全加载 YAML，并拒绝会被普通加载器静默覆盖的重复字段。"""
@@ -85,9 +93,11 @@ def resolve_path(value: Path | str, base_dir: Path) -> Path:
 
 def _validation_message(exc: ValidationError) -> str:
     # 不输出 Pydantic 默认附带的输入值，也不把自定义校验上下文序列化。
-    return "; ".join(
-        f"{'.'.join(map(str, error['loc']))}: {error['msg']}"
-        for error in exc.errors(include_input=False, include_context=False, include_url=False)
+    return redact_text(
+        "; ".join(
+            f"{'.'.join(map(str, error['loc']))}: {error['msg']}"
+            for error in exc.errors(include_input=False, include_context=False, include_url=False)
+        )
     )
 
 
@@ -122,6 +132,8 @@ def load_config(
         mark = getattr(exc, "problem_mark", None)
         location = f"，第 {mark.line + 1} 行、第 {mark.column + 1} 列" if mark else ""
         raise ConfigError(f"无效 YAML{location}") from None
+    except UnicodeError:
+        raise ConfigError("配置文件必须使用 UTF-8 编码") from None
     except OSError:
         raise ConfigError("无法读取配置文件") from None
     try:

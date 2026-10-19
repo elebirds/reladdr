@@ -41,11 +41,17 @@ def atomic_json(path: Path, value: object) -> None:
             temporary.unlink(missing_ok=True)
 
 
-def read_json(path: Path) -> object:
+def parse_json(text: str) -> object:
+    """读取 JSON 和 JSONL 时同样拒绝非标准的 NaN/Infinity。"""
+
     def invalid_constant(value: str) -> None:
         raise ValueError("运行记录包含非有限数值")
 
-    return json.loads(path.read_text(encoding="utf-8"), parse_constant=invalid_constant)
+    return json.loads(text, parse_constant=invalid_constant)
+
+
+def read_json(path: Path) -> object:
+    return parse_json(path.read_text(encoding="utf-8"))
 
 
 def run_path(root: Path, relative: str) -> Path:

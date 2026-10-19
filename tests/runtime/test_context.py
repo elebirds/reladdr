@@ -222,3 +222,50 @@ def test_runtime_import_does_not_load_gpu_or_tracking_stack():
         text=True,
     )
     assert result.returncode == 0, result.stderr
+
+
+def test_username_is_not_used_to_corrupt_normal_paths(runtime_config, monkeypatch, tmp_path):
+    monkeypatch.setenv("MLFLOW_TRACKING_USERNAME", tmp_path.name)
+    with RunContext(runtime_config()) as run:
+        pass
+    assert read_run(run.run_dir)["config"]["run"]["output_root"] == str(tmp_path / "runs")
+
+
+def test_empty_explicit_run_id_is_not_replaced_with_random_id(runtime_config):
+    with pytest.raises(ValueError):
+        RunContext(runtime_config(), run_id="")
+
+
+def test_phase_recording_failure_preserves_original_error(runtime_config, monkeypatch):
+    original = RuntimeError("original computation error")
+    with pytest.raises(RuntimeError) as caught, RunContext(runtime_config()) as run:
+        with run.time_phase("fails"):
+
+            def fail(*args, **kwargs):
+                raise OSError("cannot record phase")
+
+            monkeypatch.setattr(run, "log_metric", fail)
+            raise original
+    assert caught.value is original
+    assert any("阶段耗时未保存" in note for note in original.__notes__)
+
+
+def test_read_run_rejects_nonfinite_jsonl(runtime_config):
+    with RunContext(runtime_config()) as run:
+        pass
+    with (run.run_dir / "metrics.jsonl").open("a") as stream:
+        stream.write('{"name": "invalid", "value": NaN}\n')
+    with pytest.raises(ValueError, match="非有限"):
+        read_run(run.run_dir)
+
+
+def test_wheel_install_does_not_borrow_enclosing_project_git(tmp_path, monkeypatch):
+    from reladdr.runtime import provenance
+
+    installed = tmp_path / "env/lib/python3.12/site-packages/reladdr/runtime/provenance.py"
+    monkeypatch.setattr(provenance, "__file__", str(installed))
+    metadata, diff, sources = provenance.capture_provenance()
+    assert not metadata["git"]["available"]
+    assert "分发包" in metadata["git"]["reason"]
+    assert diff == ""
+    assert sources == {}
