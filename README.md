@@ -48,4 +48,11 @@ uv run --locked --extra tracking python -c "import mlflow; print(mlflow.__versio
 - [测试约定](tests/README.md)：实现时需要验证的研究语义。
 - [贡献约定](AGENTS.md)：代码边界、数据与执行权限。
 
-研究计划与推导在独立研究档案中维护，不与原始 run 数据混在一起。
+## 研究文档
+
+从 [研究档案首页](docs/research/README.md) 开始：背景与最近邻文献、原生接口、机制假设、
+联合干预搜索的完整推导、实验基线、预期结果与决策、资源复现要求分别维护。
+实现顺序见 [实验入口](docs/experiment_plan.md)。
+
+核心比较是关系怎样接入目标地址，而不只是能否解码空间 ID。机制线与搜索线独立验收；
+文档明确区分作者证据、数学推导、工作假说和本项目实测。
