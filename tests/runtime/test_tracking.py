@@ -15,7 +15,8 @@ from reladdr.runtime.tracking import TrackingError, sync_run
 class ControlledClient:
     """实现同步实际使用的 SDK 接口，并允许在指定调用处注入故障。"""
 
-    def __init__(self):
+    def __init__(self, artifact_uri="s3://test-bucket/runs/artifacts"):
+        self.artifact_uri = artifact_uri
         self.experiment = None
         self.runs = {}
         self.params = []
@@ -40,7 +41,9 @@ class ControlledClient:
     def create_run(self, experiment_id, start_time, tags, run_name):
         run = SimpleNamespace(
             info=SimpleNamespace(
-                run_id=f"remote-{len(self.runs) + 1}", experiment_id=experiment_id
+                run_id=f"remote-{len(self.runs) + 1}",
+                experiment_id=experiment_id,
+                artifact_uri=self.artifact_uri,
             ),
             data=SimpleNamespace(tags=tags),
         )
@@ -308,3 +311,210 @@ def test_missing_optional_sdk_is_actionable(tracked_run, monkeypatch):
         sync_run(tracked_run)
     assert read_run(tracked_run)["status"]["status"] == "completed"
     assert read_run(tracked_run)["tracking"]["status"] == "failed"
+
+
+@pytest.mark.parametrize("params_metrics", [True, False])
+@pytest.mark.parametrize("artifacts", ["off", "direct", "proxy"])
+def test_independent_switch_combinations(runtime_config, monkeypatch, params_metrics, artifacts):
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", "https://mlflow.example.invalid")
+    uri = "mlflow-artifacts:/1/run/artifacts" if artifacts == "proxy" else "s3://test/run"
+    client = ControlledClient(artifact_uri=uri)
+    config = runtime_config(tracking="mlflow", params_metrics=params_metrics, artifacts=artifacts)
+    with RunContext(config) as run:
+        run.log_metric("measured", 2)
+        run.artifacts.write_json("summary.json", {}, description="组合检查", sync=True)
+    state = sync_run(run.run_dir, client=client)
+    assert state["policy"] == {"params_metrics": params_metrics, "artifacts": artifacts}
+    assert bool(client.params) == params_metrics
+    assert bool(client.metrics) == params_metrics
+    assert bool(client.uploads) == (artifacts != "off")
+    assert state["params_metrics_status"] == ("synced" if params_metrics else "disabled")
+    assert state["artifacts_status"] == ("disabled" if artifacts == "off" else "synced")
+    assert state["status"] == (
+        "disabled" if not params_metrics and artifacts == "off" else "synced"
+    )
+
+
+def test_off_does_not_inspect_files_or_artifact_backend(tracked_run, monkeypatch):
+    (tracked_run / "artifacts/summary.json").unlink()
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("关闭归档时不能检查文件或后端")
+
+    monkeypatch.setattr("reladdr.runtime.tracking._upload_files", forbidden)
+    monkeypatch.setattr("reladdr.runtime.tracking._check_artifact_route", forbidden)
+    client = ControlledClient()
+    state = sync_run(tracked_run, client=client, artifacts="off", max_artifact_bytes=0)
+    assert state["params_metrics_status"] == "synced"
+    assert not client.uploads
+    # 覆盖策略持久化，裸重试不会意外重新启用旧配置的归档。
+    assert sync_run(tracked_run, client=client)["policy"]["artifacts"] == "off"
+    assert len(client.params) == 4
+
+
+def test_both_disabled_need_neither_service_nor_sdk(tracked_run, monkeypatch):
+    monkeypatch.delenv("MLFLOW_TRACKING_URI")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("两项关闭后不应创建 SDK 客户端")
+
+    monkeypatch.setattr("reladdr.runtime.tracking._make_client", forbidden)
+    state = sync_run(tracked_run, params_metrics=False, artifacts="off")
+    assert state["status"] == "disabled"
+    assert state["remote_run_id"] is None
+    assert sync_run(tracked_run)["status"] == "disabled"
+
+
+@pytest.mark.parametrize(
+    "mode, uri",
+    [
+        ("direct", "mlflow-artifacts:/1/run/artifacts"),
+        ("direct", "file:///tmp/store"),
+        ("proxy", "s3://test/run"),
+        ("proxy", "https://files.example.invalid/arbitrary"),
+        ("proxy", "https://files.example.invalid/api/2.0/mlflow-artifacts/artifacts-other"),
+        ("proxy", "mlflow-artifacts:invalid-path"),
+    ],
+)
+def test_route_mismatch_keeps_completed_metrics_without_fallback(tracked_run, mode, uri):
+    client = ControlledClient(artifact_uri=uri)
+    with pytest.raises(TrackingError, match="不匹配"):
+        sync_run(tracked_run, client=client, artifacts=mode)
+    state = read_run(tracked_run)["tracking"]
+    assert state["params_metrics_status"] == "synced"
+    assert state["artifacts_status"] == "failed"
+    assert not client.uploads
+    count = len(client.metrics)
+    state = sync_run(tracked_run, client=client, artifacts="off")
+    assert state["status"] == "synced"
+    assert len(client.metrics) == count
+    assert len(client.params) == 4
+    assert len(client.runs) == 1
+
+
+def test_later_archive_uses_same_run_without_relogging_metrics(tracked_run):
+    client = ControlledClient()
+    state = sync_run(tracked_run, client=client, artifacts="off")
+    count = len(client.metrics)
+    config_before = (tracked_run / "config.resolved.json").read_bytes()
+    state = sync_run(tracked_run, client=client, params_metrics=False, artifacts="direct")
+    assert state["remote_run_id"] == "remote-1"
+    assert state["params_metrics_status"] == "disabled"
+    assert state["artifacts_status"] == "synced"
+    assert len(client.metrics) == count
+    assert len(client.runs) == 1
+    assert client.uploads
+    state = sync_run(tracked_run, client=client, params_metrics=True)
+    assert state["params_metrics_status"] == "synced"
+    assert len(client.params) == 4
+    assert len(client.metrics) == count
+    assert (tracked_run / "config.resolved.json").read_bytes() == config_before
+
+
+def test_proxy_accepts_mlflow_http_artifact_endpoint(tracked_run):
+    client = ControlledClient(
+        artifact_uri="https://mlflow.example.invalid/api/2.0/mlflow-artifacts/artifacts/1/run"
+    )
+    assert sync_run(tracked_run, client=client, artifacts="proxy")["status"] == "synced"
+    assert client.uploads
+
+
+def test_archive_preflight_failure_does_not_block_explicit_metrics(tracked_run):
+    client = ControlledClient()
+    with pytest.raises(TrackingError, match="单文件限制"):
+        sync_run(tracked_run, client=client, artifacts="direct", max_artifact_bytes=1)
+    state = read_run(tracked_run)["tracking"]
+    assert state["params_metrics_status"] == "synced"
+    assert state["artifacts_status"] == "failed"
+    assert len(client.metrics) == len(read_run(tracked_run)["metrics"])
+    assert not client.uploads
+
+
+def test_auth_failure_does_not_continue_to_object_store(tracked_run):
+    client = ControlledClient()
+
+    def denied(*args, **kwargs):
+        raise PermissionError("controlled denied")
+
+    client.log_param = denied
+    with pytest.raises(TrackingError):
+        sync_run(tracked_run, client=client, artifacts="direct")
+    assert not client.uploads
+    assert read_run(tracked_run)["tracking"]["params_metrics_status"] == "failed"
+
+
+def test_missing_oss_extra_is_actionable_without_losing_metrics(tracked_run):
+    client = ControlledClient()
+
+    def missing(*args, **kwargs):
+        raise ModuleNotFoundError("controlled missing boto3", name="boto3")
+
+    client.log_artifact = missing
+    with pytest.raises(TrackingError, match="--extra oss"):
+        sync_run(tracked_run, client=client, artifacts="direct")
+    state = read_run(tracked_run)["tracking"]
+    assert state["params_metrics_status"] == "synced"
+    assert state["artifacts_status"] == "failed"
+
+
+def test_old_config_and_state_keep_native_sync_behavior(tracked_run):
+    config = json.loads((tracked_run / "config.resolved.json").read_text())
+    config["tracking"].pop("params_metrics")
+    config["tracking"].pop("artifacts")
+    atomic_json(tracked_run / "config.resolved.json", config)
+    state = read_run(tracked_run)["tracking"]
+    for key in ("policy", "params_metrics_status", "artifacts_status", "parameters_synced"):
+        state.pop(key)
+    atomic_json(tracked_run / "tracking.json", state)
+    client = ControlledClient(artifact_uri="file:///tmp/legacy-store")
+    state = sync_run(tracked_run, client=client)
+    assert state["policy"]["artifacts"] == "native"
+    assert state["status"] == "synced"
+    assert client.uploads
+
+
+@pytest.mark.parametrize("kwargs", [{"params_metrics": "false"}, {"artifacts": "auto"}])
+def test_invalid_switches_do_not_contact_remote(tracked_run, kwargs):
+    client = ControlledClient()
+    with pytest.raises(TrackingError):
+        sync_run(tracked_run, client=client, **kwargs)
+    assert not client.runs
+
+
+def test_initial_state_separates_components(runtime_config):
+    with RunContext(runtime_config(tracking="mlflow", params_metrics=True, artifacts="off")) as run:
+        state = read_run(run.run_dir)["tracking"]
+        assert state["status"] == "pending"
+        assert state["params_metrics_status"] == "pending"
+        assert state["artifacts_status"] == "disabled"
+    with RunContext(
+        runtime_config(tracking="mlflow", params_metrics=False, artifacts="off")
+    ) as run:
+        state = read_run(run.run_dir)["tracking"]
+        assert state["status"] == "disabled"
+        assert state["remote_run_id"] is None
+
+
+def test_archive_failure_cursor_is_preserved_when_toggling_off(tracked_run):
+    client = ControlledClient()
+    original = client.log_artifact
+    failed = False
+
+    def fail_once(*args, **kwargs):
+        nonlocal failed
+        if len(client.uploads) == 2 and not failed:
+            failed = True
+            raise ConnectionError("controlled upload failure")
+        original(*args, **kwargs)
+
+    client.log_artifact = fail_once
+    with pytest.raises(TrackingError):
+        sync_run(tracked_run, client=client, artifacts="direct")
+    assert read_run(tracked_run)["tracking"]["params_metrics_status"] == "synced"
+    acked = read_run(tracked_run)["tracking"]["artifacts_synced"].copy()
+    state = sync_run(tracked_run, client=client, params_metrics=False, artifacts="off")
+    assert state["artifacts_synced"] == acked
+    state = sync_run(tracked_run, client=client, artifacts="direct")
+    assert state["status"] == "synced"
+    assert len(client.uploads) == len(state["artifacts_synced"])
+    assert len(client.runs) == 1

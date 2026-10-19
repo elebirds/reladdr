@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+from contextlib import redirect_stdout
 
 from reladdr.runtime import ConfigError, load_config, read_run
 
@@ -29,6 +30,18 @@ def _parser() -> argparse.ArgumentParser:
     tracking_commands = tracking.add_subparsers(dest="command", required=True)
     sync = tracking_commands.add_parser("sync", help="将允许的本地结果同步到 MLflow")
     sync.add_argument("directory", help="已结束且显式启用 MLflow 的 run 目录")
+    sync.add_argument(
+        "--params-metrics",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="启用/关闭参数与指标同步；省略时沿用该 run 的上次策略或初始配置",
+    )
+    sync.add_argument(
+        "--artifacts",
+        choices=("off", "direct", "proxy"),
+        default=None,
+        help="关闭文件归档、直连 OSS/S3 或经 MLflow 代理；策略会记录以供重试",
+    )
     return parser
 
 
@@ -56,7 +69,14 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Run: {record['metadata']['run_id']}")
                 print(f"实验: {record['metadata']['experiment']['id']}")
                 print(f"执行状态: {record['status']['status']}")
-                print(f"同步状态: {record['tracking']['status']}")
+                tracking = record["tracking"]
+                print(f"同步状态: {tracking['status']}")
+                if "policy" in tracking:
+                    print(f"参数/指标: {tracking.get('params_metrics_status', 'pending')}")
+                    print(
+                        f"文件归档: {tracking.get('artifacts_status', 'pending')} "
+                        f"({tracking['policy']['artifacts']})"
+                    )
                 print(f"指标记录: {len(record['metrics'])}")
                 print(f"登记产物: {len(record['manifest']['artifacts'])}")
                 print(f"目录: {record['run_dir']}")
@@ -66,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
             from reladdr.runtime.tracking import TrackingError, sync_run
 
             try:
-                state = sync_run(args.directory)
+                # SDK 在 HTTP 服务收尾时会向 stdout 打印链接；CLI stdout 始终只输出 JSON。
+                with redirect_stdout(sys.stderr):
+                    state = sync_run(
+                        args.directory, params_metrics=args.params_metrics, artifacts=args.artifacts
+                    )
             except TrackingError as exc:
                 print(f"同步失败：{exc}", file=sys.stderr)
                 return 1

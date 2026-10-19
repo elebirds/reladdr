@@ -15,6 +15,9 @@ reladdr = "reladdr.cli:main"
 
 [project.optional-dependencies]
 tracking = ["mlflow-skinny>=3.17,<4"]
+oss = [
+    "boto3>=1.40,<2",
+]
 
 [dependency-groups]
 dev = [

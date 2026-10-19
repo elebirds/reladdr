@@ -82,3 +82,39 @@ def test_tracking_cli_requires_explicit_run_opt_in(runtime_config):
     assert result.returncode == 1
     assert "未显式启用" in result.stderr
     assert "Traceback" not in result.stderr
+
+
+def test_tracking_cli_can_disable_both_without_sdk_or_destination(runtime_config, monkeypatch):
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
+    with RunContext(runtime_config(tracking="mlflow")) as run:
+        pass
+    result = command("tracking", "sync", run.run_dir, "--no-params-metrics", "--artifacts", "off")
+    assert result.returncode == 0, result.stderr
+    state = json.loads(result.stdout)
+    assert state["status"] == "disabled"
+    assert state["policy"] == {"params_metrics": False, "artifacts": "off"}
+    retry = command("tracking", "sync", run.run_dir)
+    assert retry.returncode == 0, retry.stderr
+    assert json.loads(retry.stdout)["status"] == "disabled"
+    inspected = command("run", "inspect", run.run_dir)
+    assert "参数/指标: disabled" in inspected.stdout
+    assert "文件归档: disabled (off)" in inspected.stdout
+
+
+def test_tracking_cli_rejects_unknown_archive_mode(tmp_path):
+    result = command("tracking", "sync", tmp_path, "--artifacts", "auto")
+    assert result.returncode == 2
+
+
+def test_tracking_cli_keeps_sdk_console_messages_out_of_json(monkeypatch, capsys, tmp_path):
+    from reladdr.cli import main
+
+    def sdk_sync(directory, **kwargs):
+        print("SDK run link")
+        return {"status": "synced", "policy": kwargs}
+
+    monkeypatch.setattr("reladdr.runtime.tracking.sync_run", sdk_sync)
+    assert main(["tracking", "sync", str(tmp_path), "--artifacts", "off"]) == 0
+    output = capsys.readouterr()
+    assert json.loads(output.out)["status"] == "synced"
+    assert "SDK run link" in output.err

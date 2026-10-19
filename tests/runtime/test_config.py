@@ -152,3 +152,30 @@ def test_config_requires_utf8(tmp_path):
     path.write_bytes(b"\xff\xfePRIVATE")
     with pytest.raises(ConfigError, match="UTF-8"):
         load_config(path)
+
+
+@pytest.mark.parametrize("mode", ["off", "direct", "proxy"])
+def test_tracking_switches_are_explicit_and_strict(config_file, mode):
+    source = config_file(
+        "tracking:\n  mode: mlflow\n  experiment_name: test\n"
+        f'  params_metrics: false\n  artifacts: "{mode}"\n'
+    )
+    settings = load_config(source).document.tracking
+    assert settings.params_metrics is False
+    assert settings.artifacts == mode
+
+
+@pytest.mark.parametrize(
+    "fields",
+    ["params_metrics: 'false'", "params_metrics: 0", "artifacts: auto", "artifacts: off"],
+)
+def test_tracking_switches_reject_ambiguous_values(config_file, fields):
+    with pytest.raises(ConfigError):
+        load_config(config_file(f"tracking:\n  {fields}\n"))
+
+
+@pytest.mark.parametrize("key", ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN"])
+def test_oss_credentials_cannot_enter_config(config_file, key):
+    with pytest.raises(ConfigError) as error:
+        load_config(config_file(parameters=f"{{{key}: PRIVATE-VALUE}}"))
+    assert "PRIVATE-VALUE" not in str(error.value)

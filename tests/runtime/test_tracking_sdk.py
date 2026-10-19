@@ -42,3 +42,43 @@ def test_real_sdk_file_store_round_trip(runtime_config, tmp_path, monkeypatch):
     with open(path, encoding="utf-8") as stream:
         assert json.load(stream) == {"count": 4}
     assert sync_run(run.run_dir)["remote_run_id"] == remote.info.run_id
+
+
+def test_real_sdk_cli_metrics_only_has_no_files(runtime_config, tmp_path, monkeypatch):
+    uri = (tmp_path / "mlflow-metadata-store").as_uri()
+    monkeypatch.setenv("MLFLOW_TRACKING_URI", uri)
+    monkeypatch.setenv("MLFLOW_ALLOW_FILE_STORE", "true")
+    with RunContext(runtime_config(tracking="mlflow", artifacts="off")) as run:
+        run.log_metric("measured", 7)
+        run.artifacts.write_json("local.json", {}, description="关闭归档的登记产物", sync=True)
+    # 文件缺失不能阻塞关闭归档时的参数/指标同步。
+    (run.run_dir / "artifacts/local.json").unlink()
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "reladdr",
+            "tracking",
+            "sync",
+            str(run.run_dir),
+            "--params-metrics",
+            "--artifacts",
+            "off",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    state = json.loads(result.stdout)
+    client = mlflow.tracking.MlflowClient(tracking_uri=uri)
+    remote = client.get_run(state["remote_run_id"])
+    assert remote.info.status == "FINISHED"
+    assert remote.data.params["run.seed"] == "19"
+    assert remote.data.metrics["measured"] == 7
+    assert client.list_artifacts(remote.info.run_id) == []
+    assert state["params_metrics_status"] == "synced"
+    assert state["artifacts_status"] == "disabled"
+    # 裸重试沿用 off 且不重复发送已经确认的指标。
+    assert sync_run(run.run_dir)["remote_run_id"] == remote.info.run_id
+    assert len(client.get_metric_history(remote.info.run_id, "measured")) == 1

@@ -23,12 +23,17 @@ _SECRET_FIELDS = {
     "mlflow_tracking_password",
     "mlflow_tracking_username",
     "mlflow_tracking_token",
+    "aws_access_key_id",
+    "aws_secret_access_key",
+    "aws_session_token",
+    "mlflow_s3_endpoint_url",
 }
 _SECRET_KEYS = {key.replace("_", "") for key in _SECRET_FIELDS}
-# 只读取密码/令牌变量，不遍历环境。用户名不是秘密值，不能用它遮盖正常的路径与域名。
+# 只读取列出的认证变量，不遍历环境。用户名不作遮盖词，避免损坏正常路径与域名。
 _SECRET_ENV = (
     "MLFLOW_TRACKING_PASSWORD",
     "MLFLOW_TRACKING_TOKEN",
+    "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
     "HF_TOKEN",

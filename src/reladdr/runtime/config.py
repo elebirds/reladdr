@@ -45,6 +45,9 @@ class RunSettings(StrictModel):
 class TrackingSettings(StrictModel):
     mode: Literal["local", "mlflow"] = "local"
     experiment_name: str | None = Field(default=None, min_length=1)
+    params_metrics: bool = True
+    # 省略时保留旧配置的 SDK 原生路由；新配置应明确填写 off/direct/proxy。
+    artifacts: Literal["off", "direct", "proxy"] | None = None
 
     @field_validator("experiment_name")
     @classmethod

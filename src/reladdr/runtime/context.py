@@ -105,12 +105,22 @@ class RunContext:
                 "details": {},
             }
             atomic_json(self.run_dir / "metadata.json", self._metadata)
+            tracking = snapshot["tracking"]
+            params_enabled = tracking["mode"] == "mlflow" and tracking["params_metrics"]
+            artifacts_enabled = tracking["mode"] == "mlflow" and tracking["artifacts"] != "off"
             atomic_json(
                 self.run_dir / "tracking.json",
                 {
                     "schema_version": 1,
                     "mode": snapshot["tracking"]["mode"],
-                    "status": "pending" if snapshot["tracking"]["mode"] == "mlflow" else "disabled",
+                    "status": "pending" if params_enabled or artifacts_enabled else "disabled",
+                    "policy": {
+                        "params_metrics": tracking["params_metrics"],
+                        "artifacts": tracking["artifacts"] or "native",
+                    },
+                    "params_metrics_status": "pending" if params_enabled else "disabled",
+                    "artifacts_status": "pending" if artifacts_enabled else "disabled",
+                    "parameters_synced": False,
                     "remote_run_id": None,
                     "metrics_synced": 0,
                     "artifacts_synced": [],

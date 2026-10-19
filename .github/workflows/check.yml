@@ -58,3 +58,8 @@ jobs:
         run: uv sync --locked --extra tracking
       - name: Verify SDK against an isolated local file store
         run: uv run --locked --extra tracking pytest tests/runtime/test_tracking_sdk.py
+      # 可选直连依赖只检查安装/导入，不读取凭据或访问对象存储。
+      - name: Verify optional OSS client dependencies
+        run: |
+          uv sync --locked --extra tracking --extra oss
+          uv run --locked --extra tracking --extra oss python -c "import boto3; from mlflow.store.artifact.s3_artifact_repo import S3ArtifactRepository; print('OSS client imports succeeded')"

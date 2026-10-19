@@ -11,13 +11,17 @@ class RuntimeTestParameters(StrictModel):
 
 @pytest.fixture
 def runtime_config(tmp_path):
-    def create(*, tracking="local", output_root="runs", seed=19):
+    def create(
+        *, tracking="local", output_root="runs", seed=19, params_metrics=True, artifacts=None
+    ):
         source = tmp_path / "runtime.yaml"
         source.write_text(
             "# 运行层测试配置，不代表模型实验。\n"
             "experiment:\n  id: runtime_test\n  protocol_version: '1'\n  parameters: {}\n"
             f"run:\n  seed: {seed}\n  output_root: {output_root}\n"
-            f"tracking:\n  mode: {tracking}\n  experiment_name: reladdr-runtime-tests\n",
+            f"tracking:\n  mode: {tracking}\n  experiment_name: reladdr-runtime-tests\n"
+            f"  params_metrics: {str(params_metrics).lower()}\n"
+            + (f'  artifacts: "{artifacts}"\n' if artifacts is not None else ""),
             encoding="utf-8",
         )
         return load_config(source, parameter_model=RuntimeTestParameters)
