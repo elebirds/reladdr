@@ -13,8 +13,8 @@ uv build
 ```
 
 项目固定 Python 3.12.14；环境位于项目 `.venv`。基础运行依赖 Pydantic 与 PyYAML，开发依赖
-pytest 与 Ruff。配置、生命周期、日志、产物、来源和 CLI 均有真实 CPU 测试；研究组件尚未
-实现。测试不下载模型、不访问远程服务，也不把缺少模型实验当作模型检查通过。
+pytest 与 Ruff。配置、生命周期、日志、产物、来源、CLI 和三形状真值均有 CPU 测试；
+模型前向另在 GPU 服务器验证。测试不下载模型、不访问远程服务，也不把缺少模型实验当作模型检查通过。
 
 ## 修改依赖时一起更新锁文件
 
@@ -26,17 +26,20 @@ CI 固定 uv 0.12.10；更换构建工具时同步检查 CI 与构建后端。
 [uv 锁定语义](https://docs.astral.sh/uv/concepts/projects/sync/) 中，`--locked` 在声明与
 锁文件不一致时失败，不会悄悄更新锁文件。
 
-## Mac 做开发，GPU 环境接入时再固定模型栈
+## Mac 跑 CPU 测试，GPU 环境加载固定模型栈
 
-Qwen2-VL-7B-Instruct 是首个计划对象。本轮未安装 PyTorch、Transformers、FlashAttention，
-未下载模型或数据；导入公共运行层不导入 MLflow 或 GPU 栈。
+首个模型为 Qwen2-VL-7B-Instruct，`gpu` extra 固定 Torch 2.8.0、torchvision 0.23.0、
+Transformers 4.57.1 和 Accelerate 1.11.0。Mac 不需要为测试生成器或记录层安装 GPU extra。
+基础图像渲染固定 Pillow 11.3.0，导入公共运行层不加载模型或 CUDA。
 
-接入时再声明 `gpu` 可选依赖，固定验证过的版本与 Linux CUDA wheel 来源。uv 锁文件不固定
-显卡驱动，实际运行仍要记录 CUDA/驱动/GPU、dtype、attention backend 和 token 长度。
-不同精度或后端可能改变被解释的计算，不能默认量化来规避显存要求。
+完整独立 GPU 环境使用 `uv sync --locked --extra gpu`。本次 AutoDL 工程初调使用镜像
+Python 3.12.3，先按锁中版本核对再继承现有 CUDA 包，其余依赖放入项目 `.venv`，实际继承
+清单单独保存；运行用 `uv run --locked --no-sync --python /root/miniconda3/bin/python ...`。
+它与项目默认 Python 3.12.14 区分记录，不把镜像环境称为全新锁定环境。
 
-[uv PyTorch 指南](https://docs.astral.sh/uv/guides/integration/pytorch/) 介绍了来源配置。
-模型适配器独占 GQA、位置编码、token 映射与 cache 布局知识，实验不复制 hook 实现。
+运行命令、数据和输出见 [GPU 初调](gpu_smoke.md)。正式机制结论使用固定 checkpoint revision、
+预处理、dtype、attention backend 和场景族划分，不因显存默认量化。
+模型适配器独占预处理、token 映射和 cache 布局；原生干预端口尚未实现。
 
 ## 公共运行层只管可靠执行，不统一实验科学协议
 

@@ -8,7 +8,8 @@
 
 公共运行层已实现：配置校验、本地运行生命周期、日志、指标、产物与来源记录，以及可选
 MLflow 显式同步和重试。参数/指标独立开关，文件归档可选关闭、OSS 直连或服务端代理。
-尚未实现数据生成、模型调用、激活干预或搜索算法，也没有模型实验结果。
+已加入三形状场景、Qwen2-VL BF16 推理与 E01 工程冒烟入口。
+正式网格/留出协议、激活干预和搜索算法尚未实现；初调结果与研究结论分别记录。
 
 ## 开始开发
 
@@ -31,7 +32,7 @@ uv run --locked reladdr run inspect --json path/to/run
 
 公共检查明确输出 `common_only`，不代表实验参数已通过校验。
 真实实验入口需要提供自己的参数模型，再通过 `RunContext` 执行。
-当前没有 E01 等实验的执行命令。
+三形状初调入口为 `python -m reladdr.experiments.e01`，见[GPU 初调](docs/gpu_smoke.md)。
 
 已结束且配置中启用 MLflow 的 run，可以在注入批准的服务地址与认证后显式同步：
 
@@ -54,10 +55,12 @@ uv run --locked --extra tracking reladdr tracking sync path/to/run --params-metr
 - `reladdr.evaluation`：可复用的研究评价与统计。
 - `reladdr.search`：联合干预集合搜索。
 
-研究组件目前只有中文说明，没有科学计算实现。不建立统一实验评分或庞大的实验基类。
+场景与模型组件已有初调实现，其余组件仍是说明。实验私有协议留在 `reladdr.experiments`，
+不建立统一实验评分或庞大的实验基类。
 
 ## 文档
 
+- [GPU 初调](docs/gpu_smoke.md)：Instruct、三形状任务、图像对照和真实输出。
 - [运行层用法](docs/runtime.md)：配置边界、Python 接口、输出布局和状态含义。
 - [开发与复现](docs/development.md)：依赖、检查、CPU/GPU 分工与记录约定。
 - [配置规范](configs/README.md) · [测试说明](tests/README.md) · [贡献约定](AGENTS.md)。
