@@ -269,3 +269,15 @@ def test_wheel_install_does_not_borrow_enclosing_project_git(tmp_path, monkeypat
     assert "分发包" in metadata["git"]["reason"]
     assert diff == ""
     assert sources == {}
+
+
+def test_provenance_preserves_first_visible_package_version(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    distributions = [
+        SimpleNamespace(metadata={"Name": "numpy"}, version="2.5.4"),
+        SimpleNamespace(metadata={"Name": "numpy"}, version="2.3.2"),
+    ]
+    monkeypatch.setattr("importlib.metadata.distributions", lambda: distributions)
+    metadata, _, _ = capture_provenance(tmp_path)
+    assert metadata["packages"]["numpy"] == "2.5.4"

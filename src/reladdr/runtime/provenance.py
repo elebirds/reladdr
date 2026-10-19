@@ -21,11 +21,12 @@ def _git(directory: Path, *arguments: str) -> str:
 
 def capture_provenance(code_root: Path | None = None) -> tuple[dict, str, dict[str, str]]:
     """返回来源、相关代码差异及未跟踪源码；后两者只保存在本地。"""
-    packages = {
-        distribution.metadata["Name"]: distribution.version
-        for distribution in importlib.metadata.distributions()
-        if distribution.metadata["Name"]
-    }
+    packages = {}
+    for distribution in importlib.metadata.distributions():
+        name = distribution.metadata["Name"]
+        if name:
+            # 按 Python 搜索路径保留首个可见分发；继承环境中的旧包不能覆盖项目环境版本。
+            packages.setdefault(name, distribution.version)
     metadata = {
         "python": platform.python_version(),
         "implementation": platform.python_implementation(),
