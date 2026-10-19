@@ -4,6 +4,7 @@ import json
 import logging
 import random
 import subprocess
+import sys
 
 import pytest
 
@@ -211,7 +212,7 @@ def test_metric_step_is_explicit_integer(runtime_config, step):
 def test_runtime_import_does_not_load_gpu_or_tracking_stack():
     result = subprocess.run(
         [
-            "python",
+            sys.executable,
             "-c",
             "import sys; import reladdr.runtime; "
             "assert not {'torch', 'transformers', 'mlflow'} & sys.modules.keys()",

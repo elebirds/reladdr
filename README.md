@@ -1,58 +1,54 @@
+<!-- 介绍 RelAddr 的研究目标、当前实现、开发入口和文档导航。 -->
 # RelAddr
 
 **Relation-Conditioned Visual Addressing · 视觉语言模型的关系条件寻址**
 
 研究视觉语言模型如何把参照对象与关系条件接入目标选址，再读取目标属性。
-机制研究与联合干预集合搜索是两条独立研究线，共享模型适配和评估基础设施。
+机制研究与联合干预集合搜索是两条独立研究线，共享模型适配和记录基础设施。
 
-当前仓库提供 uv 开发环境和空的 Python 包结构；尚未实现数据生成、模型调用、
-激活干预或搜索算法，也没有模型实验结果。
+公共运行层已实现：配置校验、本地运行生命周期、日志、指标、产物与来源记录。
+尚未实现数据生成、模型调用、激活干预或搜索算法，也没有模型实验结果。
 
 ## 开始开发
 
-在仓库根目录运行：
-
 ```sh
 uv sync --locked
-uv run --locked python -c "import reladdr; print(reladdr.__file__)"
+uv run --locked reladdr --help
+uv run --locked pytest
 ```
 
-项目固定 Python 3.12.14，依赖由 `pyproject.toml` 声明、`uv.lock` 锁定。
-`uv sync` 使用项目自己的 `.venv`，不要通过全局 pip 安装项目依赖。
+项目固定 Python 3.12.14；依赖由 `pyproject.toml` 和 `uv.lock` 共同管理。
+使用项目 `.venv`，不通过全局 pip 安装依赖。基础运行不依赖 GPU 或 MLflow。
 
-如需准备远程 MLflow 客户端：
+## 查看配置和结果
 
 ```sh
-uv sync --locked --extra tracking
-uv run --locked --extra tracking python -c "import mlflow; print(mlflow.__version__)"
+uv run --locked reladdr config check --common-only path/to/config.yaml
+uv run --locked reladdr run inspect path/to/run
+uv run --locked reladdr run inspect --json path/to/run
 ```
 
-这两条命令只安装和导入客户端，不连接服务、不上传数据。
-`.env.example` 是变量说明，不会被自动加载。GPU 依赖在模型适配阶段单独确定。
+公共检查明确输出 `common_only`，不代表实验参数已通过校验。
+真实实验入口需要提供自己的参数模型，再通过 `RunContext` 执行。
+当前没有 E01 等实验的执行命令。
 
-## 包结构
+## 公共能力与实验协议分开
 
-- `reladdr.tasks`：场景、渲染、问题和数据划分。
-- `reladdr.models`：模型适配、视觉 token 映射、原生 hook。
-- `reladdr.interventions`：缓存、替换和状态恢复。
-- `reladdr.mechanisms`：地址表示、关系变换与计算路径分析。
-- `reladdr.evaluation`：行为指标、中间响应和成本统计。
+- `reladdr.runtime`：公共配置、执行状态、本地记录与产物管理。
+- `reladdr.experiments`：后续实验私有配置、比较协议、执行和分析；随真实实现加入。
+- `reladdr.tasks`：场景、问题真值与场景族划分。
+- `reladdr.models`：模型加载、token 映射与原生张量接口。
+- `reladdr.interventions`：缓存、替换、重算与恢复。
+- `reladdr.mechanisms`：地址表示、关系算子与原生路径分析。
+- `reladdr.evaluation`：可复用的研究评价与统计。
 - `reladdr.search`：联合干预集合搜索。
 
-以上模块目前只有空的包标记。尚未提供实验 CLI。
+研究组件目前只有中文说明，没有科学计算实现。不建立统一实验评分或庞大的实验基类。
 
-## 开发文档
+## 文档
 
-- [开发与复现](docs/development.md)：环境、依赖、GPU/MLflow 接入与运行记录约定。
-- [配置规范](configs/README.md)：每个配置应声明的比较条件。
-- [测试约定](tests/README.md)：实现时需要验证的研究语义。
-- [贡献约定](AGENTS.md)：代码边界、数据与执行权限。
-
-## 研究文档
-
-从 [研究档案首页](docs/research/README.md) 开始：背景与最近邻文献、原生接口、机制假设、
-联合干预搜索的完整推导、实验基线、预期结果与决策、资源复现要求分别维护。
-实现顺序见 [实验入口](docs/experiment_plan.md)。
-
-核心比较是关系怎样接入目标地址，而不只是能否解码空间 ID。机制线与搜索线独立验收；
-文档明确区分作者证据、数学推导、工作假说和本项目实测。
+- [运行层用法](docs/runtime.md)：配置边界、Python 接口、输出布局和状态含义。
+- [开发与复现](docs/development.md)：依赖、检查、CPU/GPU 分工与记录约定。
+- [配置规范](configs/README.md) · [测试说明](tests/README.md) · [贡献约定](AGENTS.md)。
+- [研究档案](docs/research/README.md)：背景、文献、原生接口、机制假设、数学推导与实验设计。
+- [实验实施入口](docs/experiment_plan.md)：下一步 E01，随后分别推进机制与搜索研究。

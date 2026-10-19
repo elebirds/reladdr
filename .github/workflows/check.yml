@@ -1,3 +1,4 @@
+# 在 Linux 上验证锁定环境、公共运行层测试与包构建。
 name: Development checks
 
 on:
@@ -9,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  scaffold:
+  runtime:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -29,6 +30,8 @@ jobs:
         run: uv run --locked ruff check .
       - name: Check formatting
         run: uv run --locked ruff format --check .
+      - name: Test runtime behavior
+        run: uv run --locked pytest
       - name: Import package structure and optional tracking client
         run: >-
           uv run --locked --extra tracking python -c

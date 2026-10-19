@@ -1,12 +1,13 @@
+<!-- 说明 RelAddr 的开发边界、模块职责与必须遵循的检查。 -->
 # Working on RelAddr
 
 ## Current stage
 
-This repository is a research scaffold. Python modules are empty package markers.
-No task generator, model adapter, intervention, search algorithm, experiment CLI,
-or MLflow logging integration has been implemented. Add real functionality and
-its tests together when that implementation is requested; do not add dummy APIs
-or always-passing tests to make the scaffold look complete.
+The shared runtime is implemented with configuration validation, local run records,
+artifacts, provenance, and read-only CLI tools. Research packages remain descriptive
+markers: no scene generator, model adapter, interventions, or search algorithms exist.
+Keep runtime behavior separate from experiment-specific scientific protocols. Add real
+functionality with tests; do not create dummy experiment entry points.
 
 ## Environment
 
@@ -25,6 +26,8 @@ transitions, data integrity, and synchronization. Keep generated lockfiles machi
 
 ## Module boundaries
 
+- `reladdr.runtime`: config, lifecycle, local records, and optional tracking.
+- `reladdr.experiments` (when added): private schemas, comparisons, execution and analyses.
 - `reladdr.tasks`: scene semantics, rendering, questions, labels, and grouped splits.
 - `reladdr.models`: model loading, processor/token maps, native tensor sites, and hooks.
 - `reladdr.interventions`: cache capture, replacement, and reliable state restoration.
@@ -64,10 +67,11 @@ user authorization; setting up this scaffold does not authorize them.
 uv sync --locked
 uv run --locked ruff check .
 uv run --locked ruff format --check .
+uv run --locked pytest
 uv run --locked python -c "import reladdr"
 uv build
 ```
 
-When implementation tests exist, also run `uv run --locked pytest`. Currently no
-tests are collected; do not report the absence of tests as a passing research check.
-Optional tracking validation imports the client only and must not contact a server.
+Tests use temporary directories and never download models or contact remote services.
+Run the actual CLI and build checks as well as tests when changing its entry points.
+Optional tracking validation must not contact a server without relevant authorization.
