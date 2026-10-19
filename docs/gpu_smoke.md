@@ -36,7 +36,8 @@ uv run --locked --extra gpu python -m reladdr.experiments.e01 configs/e01_smoke.
 - 三种条件都记录 `original_label_match_rate` 和 `mean_original_answer_margin`，观察对原答案的依赖。
 - foil 在生成问题时固定，三种条件共用，不按每次输出重新挑选。
 
-自由生成要求单个颜色词；格式失败保留原文并单列。下一 token 读出合并颜色的小写/首字母
+自由生成要求单个颜色词；单词格式与是否属于六色词表分开记录。例如空白图回答 white
+不属于六个候选，但不算多词格式失败。原始文本始终保留。下一 token 读出合并颜色的小写/首字母
 大写别名，保存完整词表概率与候选 token ID；边界上不是单 token 时明确失败，不静默截断。
 
 ## 当前 AutoDL 镜像环境

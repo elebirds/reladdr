@@ -46,11 +46,12 @@ class Parameters(StrictModel):
 
 def score_prediction(prediction: dict, answer: str, foil: str) -> dict:
     match = re.fullmatch(r"([a-z]+)[.!]?", prediction["answer_text"].strip().lower())
-    parsed = match.group(1) if match and match.group(1) in PALETTE else None
+    parsed = match.group(1) if match else None
     scores = prediction["candidate_log_probs"]
     return {
         "parsed_answer": parsed,
         "format_valid": parsed is not None,
+        "answer_in_palette": parsed in PALETTE,
         "matches_original_answer": parsed == answer,
         "candidate_prediction": max(scores, key=scores.__getitem__),
         "fixed_foil": foil,

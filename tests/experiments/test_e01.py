@@ -119,3 +119,13 @@ def test_readout_margin_uses_fixed_foil_not_a_new_argmax():
     scored = score_prediction(prediction, "red", "blue")
     assert scored["original_answer_margin"] == 3.0
     assert scored["fixed_foil"] == "blue"
+
+
+def test_single_word_outside_palette_is_not_a_format_failure():
+    prediction = ControlledAdapter(Path("."), max_new_tokens=8).predict(None, "")
+    prediction["answer_text"] = "white"
+    scored = score_prediction(prediction, "red", "blue")
+    assert scored["format_valid"]
+    assert scored["parsed_answer"] == "white"
+    assert not scored["answer_in_palette"]
+    assert not scored["matches_original_answer"]
