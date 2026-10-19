@@ -40,3 +40,12 @@ uv run --locked --extra tracking python -c "import mlflow; print(mlflow.__versio
 - `reladdr.search`：联合干预集合搜索。
 
 以上模块目前只有空的包标记。尚未提供实验 CLI。
+
+## 开发文档
+
+- [开发与复现](docs/development.md)：环境、依赖、GPU/MLflow 接入与运行记录约定。
+- [配置规范](configs/README.md)：每个配置应声明的比较条件。
+- [测试约定](tests/README.md)：实现时需要验证的研究语义。
+- [贡献约定](AGENTS.md)：代码边界、数据与执行权限。
+
+研究计划与推导在独立研究档案中维护，不与原始 run 数据混在一起。
