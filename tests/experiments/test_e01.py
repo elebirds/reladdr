@@ -64,6 +64,8 @@ def test_e01_records_images_truth_outputs_and_separate_control_semantics(tmp_pat
     assert len(rows) == 60
     for row in rows:
         assert (directory / row["image_path"]).is_file()
+        assert row["fixed_foil"] == row["foil"]
+        assert row["foil"] != row["answer"]
         if row["condition"] == "blank":
             assert row["displayed_answer"] is None
             assert row["correct"] is None
@@ -77,9 +79,9 @@ def test_e01_records_images_truth_outputs_and_separate_control_semantics(tmp_pat
 
 def test_prediction_format_errors_are_kept_separate():
     prediction = ControlledAdapter(Path("."), max_new_tokens=8).predict(None, "")
-    assert score_prediction(prediction, "red")["format_valid"]
+    assert score_prediction(prediction, "red", "blue")["format_valid"]
     prediction["answer_text"] = "The color is red."
-    scored = score_prediction(prediction, "red")
+    scored = score_prediction(prediction, "red", "blue")
     assert not scored["format_valid"]
     assert scored["candidate_prediction"] == "red"
 
@@ -109,3 +111,11 @@ def test_multi_token_candidate_cannot_be_truncated():
 
     with pytest.raises(ValueError, match="单个 token"):
         candidate_token_ids(Tokenizer(), "prefix", {"red": ["red", "Red"]})
+
+
+def test_readout_margin_uses_fixed_foil_not_a_new_argmax():
+    prediction = ControlledAdapter(Path("."), max_new_tokens=8).predict(None, "")
+    prediction["candidate_log_probs"]["yellow"] = -0.5
+    scored = score_prediction(prediction, "red", "blue")
+    assert scored["original_answer_margin"] == 3.0
+    assert scored["fixed_foil"] == "blue"

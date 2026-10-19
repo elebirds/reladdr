@@ -1,4 +1,4 @@
-"""封装本地 Qwen2-VL Instruct 的 BF16 前向、预处理与颜色读出，不在导入时加载 GPU 栈。"""
+"""封装本地 Qwen2-VL Instruct 的 BF16 前向、预处理与实验指定的候选读出，不在导入时加载 GPU 栈。"""
 
 import time
 from pathlib import Path

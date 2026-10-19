@@ -31,6 +31,8 @@ def test_question_labels_follow_unique_objects_and_adjacent_positions():
         for question in questions:
             ids.append(question.question_id)
             assert objects[question.target_id].color == question.answer
+            assert question.foil != question.answer
+            assert question.foil in {obj.color for obj in scene.objects}
             if question.kind == "relation":
                 reference = objects[question.reference_id]
                 target = objects[question.target_id]

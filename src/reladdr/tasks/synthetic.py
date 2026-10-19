@@ -45,6 +45,7 @@ class Question:
     prompt: str
     answer: str
     target_id: str
+    foil: str
     reference_id: str | None = None
     relation: str | None = None
 
@@ -109,6 +110,7 @@ def questions_for(scene: Scene) -> list[Question]:
                 f"What color is the {obj.shape}? Answer with one color word.",
                 obj.color,
                 obj.object_id,
+                scene.objects[(index + 1) % 3].color,
             )
         )
         questions.append(
@@ -118,6 +120,7 @@ def questions_for(scene: Scene) -> list[Question]:
                 f"What color is the {positions[index]} object? Answer with one color word.",
                 obj.color,
                 obj.object_id,
+                scene.objects[(index + 1) % 3].color,
             )
         )
     # 关系语义为同一行/列中的直接相邻对象；边界外不生成没有答案的问题。
@@ -140,6 +143,7 @@ def questions_for(scene: Scene) -> list[Question]:
                     f"What color is the object immediately {wording}? Answer with one color word.",
                     target.color,
                     target.object_id,
+                    reference.color,
                     reference.object_id,
                     relation,
                 )

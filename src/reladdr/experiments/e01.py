@@ -44,18 +44,17 @@ class Parameters(StrictModel):
         return value
 
 
-def score_prediction(prediction: dict, answer: str) -> dict:
+def score_prediction(prediction: dict, answer: str, foil: str) -> dict:
     match = re.fullmatch(r"([a-z]+)[.!]?", prediction["answer_text"].strip().lower())
     parsed = match.group(1) if match and match.group(1) in PALETTE else None
     scores = prediction["candidate_log_probs"]
-    foil = max((color for color in PALETTE if color != answer), key=scores.__getitem__)
     return {
         "parsed_answer": parsed,
         "format_valid": parsed is not None,
         "matches_original_answer": parsed == answer,
         "candidate_prediction": max(scores, key=scores.__getitem__),
-        "strongest_wrong_color": foil,
-        "correct_foil_margin": scores[answer] - scores[foil],
+        "fixed_foil": foil,
+        "original_answer_margin": scores[answer] - scores[foil],
     }
 
 
@@ -149,7 +148,7 @@ def run_baseline(config, *, adapter_factory=None) -> Path:
                                 color: [color, color.capitalize()] for color in PALETTE
                             },
                         )
-                        scored = score_prediction(prediction, question.answer)
+                        scored = score_prediction(prediction, question.answer, question.foil)
                         aggregate = summaries[f"{condition}.{question.kind}"]
                         aggregate["n"] += 1
                         # 错配图按实际呈现的颜色计正确率；空白图没有答案，不生成假准确率。
@@ -172,7 +171,7 @@ def run_baseline(config, *, adapter_factory=None) -> Path:
                             aggregate["correct"] += correct
                         aggregate["original_matches"] += scored["matches_original_answer"]
                         aggregate["valid"] += scored["format_valid"]
-                        aggregate["margin_sum"] += scored["correct_foil_margin"]
+                        aggregate["margin_sum"] += scored["original_answer_margin"]
                         run.logger.info(
                             "%s %s answer=%s expected=%s",
                             question.question_id,
@@ -205,7 +204,7 @@ def run_baseline(config, *, adapter_factory=None) -> Path:
                 "n_labeled": values["n_labeled"],
                 "original_label_match_rate": values["original_matches"] / values["n"],
                 "format_valid_rate": values["valid"] / values["n"],
-                "mean_correct_foil_margin": values["margin_sum"] / values["n"],
+                "mean_original_answer_margin": values["margin_sum"] / values["n"],
             }
             if values["n_labeled"]:
                 summary[slice_name]["accuracy"] = values["correct"] / values["n_labeled"]
