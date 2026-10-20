@@ -1,19 +1,20 @@
 <!-- 固定 E01 v1 的任务、数据、留出、评价和执行边界；作为该入口的唯一详细协议。 -->
-# E01 v1：分组行为基线与成对图像依赖
+# B01_Behavioral_Baseline — 分组行为基线
 
-2026-10-20。实验组 `E01`，版本 `e01-v1`，属于 P1。E01.1 为能力分解，E01.2 为成对依赖，
-两项共享逐问输出，不重复推理。旧 `E01_smoke` / `engineering-v1` 保持 debug 含义。
+2026-10-20。阶段 P1；旧证据为 `E01/e01-v1`；当前ID为本页标题、协议 `b01-v1`。已实现，历史discovery已执行；原validation/test未执行。
+能力分解与成对依赖共享逐问输出，不重复推理。历史 `E01_smoke/engineering-v1` 只作工程证据；当前smoke使用 `b01-engineering-v1`。
+以下保留该历史协议的数据和执行契约；新四对象鉴别见 [B03](B03_Reference_Disambiguation.md)。
 
 ## 问题、文献与模型
 
-E01.1 测单对象感知、位置读取和关系条件读取；E01.2 测输出是否跟随图像、参照与关系。
+能力分解测单对象感知、位置读取和关系条件读取；成对依赖测输出是否跟随图像、参照与关系。
 R3 已在三对象任务和当前模型上报告高准确率，R1 §4.4 已有方向关系颜色读取。这里是能力
 复现与边界检查；布局、模板和像素规则作了适配，不冒称逐像素复刻论文，不以网格等主张创新。
 
 模型为本地固定 revision 的 Qwen2-VL-7B-Instruct，BF16、冻结参数、SDPA、batch=1，
 无量化/CPU offload。现有 processor 预算约 448×448，实际 token/grid 逐问记录。
 greedy 最多 8 个新 token。所有条件统一系统提示 `You are a helpful assistant. You respond in one token.`，
-避免某模板缺少回答格式约束。旧 smoke 不加此提示；不下载权重，不自动更换模型。
+避免某模板缺少回答格式约束。工程 smoke 不加此提示；不下载权重，不自动更换模型。
 
 ## 场景与问题
 
@@ -79,16 +80,16 @@ test 问 shared/discovery/test_only。直接位置/识别控制不受关系组�
 先在 CPU 准备和检查真实渲染：
 
 ```sh
-uv run --locked python -m reladdr.experiments.e01_formal configs/e01_formal.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.b01_behavioral_baseline configs/B01_Behavioral_Baseline.yaml --prepare-only
 ```
 
-复制为忽略的 `configs/e01_formal.local.yaml`，填本地 Instruct 路径和实际 revision。
+复制为忽略的 `configs/B01_Behavioral_Baseline.local.yaml`，填本地 Instruct 路径和实际 revision。
 可通过 `model_source_manifest` 指定既有逐文件来源 JSON，运行时复制到 provenance；
 上游下载标签 master 不冒称固定快照，权重与 processor 版本按清单分别解释。完整环境：
 
 ```sh
 uv sync --locked --extra gpu
-uv run --locked --extra gpu python -m reladdr.experiments.e01_formal configs/e01_formal.local.yaml
+uv run --locked --extra gpu python -m reladdr.experiments.b01_behavioral_baseline configs/B01_Behavioral_Baseline.local.yaml
 ```
 
 已有 AutoDL 镜像沿用 [GPU 初调](../../gpu_smoke.md) 的 `--no-sync` 环境，明确记录实际
@@ -102,7 +103,10 @@ prepare-only 记录 evaluation_executed=false，不记模型结果；源码修�
 ## 怎样改变行动
 
 识别上限差先查渲染/颜色/预处理；位置读取差定位提示难度或空间绑定；前两者稳定而关系差，
-再作为 E02/E03 入口。保留低表现方向，不将最强方向改名为整体。数据/行为边界和不确定性
+再决定相应原生机制节点的行为域。保留低表现方向，不将最强方向改名为整体。数据/行为边界和不确定性
 足够支持下一项判断即可推进，不设统一准确率门槛。
 
 首批执行结果见 [2026-10-20 discovery 记录](../../reports/e01_discovery_2026-10-20.md)。
+
+当前只使用 `B01_Behavioral_Baseline/b01-v1`；旧入口已移除，历史run不改写。
+工作量按实际问题数及视觉条件求和；本协议没有新增执行预算，旧 discovery 不重跑来制造新证据。

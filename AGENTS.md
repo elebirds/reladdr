@@ -5,9 +5,22 @@
 
 The shared runtime is implemented with configuration validation, local run records,
 artifacts, provenance, CLI tools, and optional explicit MLflow sync/retry.
-A three-shape E01 engineering smoke now has deterministic scenes, ground truth, a
-Qwen2-VL Instruct BF16 adapter and local result recording. Formal split/held-out
-protocols, activation interventions and search algorithms are not implemented.
+A three-shape engineering smoke in B01_Behavioral_Baseline has deterministic scenes,
+ground truth, a Qwen2-VL Instruct BF16 adapter and local result recording. Its formal
+runner adds stable scene-family and reference-position/relation splits, five layouts,
+paired visual controls and clustered statistics. B02_Binding_Replication,
+M01_Interface_Diagnostics and M02_Path_Diagnostics have native no-cache activation
+patching, explicit token roles, layer sweeps, reversible hooks and suffix mediation. K-cache set search is not
+implemented. Preserve the scientific meaning of the smoke and formal baseline while using only the canonical interfaces.
+Stage/experiment IDs are authoritative in docs/research/06_experimental_design.md;
+Experiment names use B/M/V/S identifiers plus English names (for example
+B03_Reference_Disambiguation); the registry maps historical E IDs without rewriting runs.
+Implemented experiments live in lowercase matching subpackages. Use only canonical IDs,
+protocol versions, configs and module entry points; do not add legacy compatibility layers.
+Historical run artifacts and their provenance retain the executed IDs and scientific meaning.
+Do not create empty packages for planned work.
+Detailed protocols live at docs/research/protocols/<full_experiment_name>.md.
+The next-batch checklist and budget are authoritative in docs/research/08_resources_and_reproducibility.md.
 Keep runtime behavior separate from experiment-specific scientific protocols. Add real
 functionality with tests; do not create dummy experiment entry points.
 
@@ -33,7 +46,7 @@ transitions, data integrity, and synchronization. Keep generated lockfiles machi
 ## Module boundaries
 
 - `reladdr.runtime`: config, lifecycle, local records, and optional tracking.
-- `reladdr.experiments` (when added): private schemas, comparisons, execution and analyses.
+- `reladdr.experiments`: per-experiment subpackages for private schemas, comparisons, execution and analyses; `_shared` contains only genuinely shared execution.
 - `reladdr.tasks`: scene semantics, rendering, questions, labels, and grouped splits.
 - `reladdr.models`: model loading, processor/token maps, native tensor sites, and hooks.
 - `reladdr.interventions`: cache capture, replacement, and reliable state restoration.

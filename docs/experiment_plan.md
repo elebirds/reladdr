@@ -1,19 +1,42 @@
-<!-- 维护实验实现顺序，不复制详细研究协议。 -->
-# 实验实施入口
+<!-- 提供新版已实现实验入口；科学树与首批预算只链接唯一来源。 -->
+# 实验入口：统一子包、配置与协议
 
-研究问题、公式与基线的唯一详细方案见 [研究档案](research/README.md)，
-具体执行协议见 [实验设计](research/06_experimental_design.md)。本页只维护实现顺序。
+科学编号和依赖见 [06](research/06_experimental_design.md)，下一批执行清单见
+[08](research/08_resources_and_reproducibility.md)。B03、M03–M09、V01、S01仅有计划，
+不使用旧入口冒充新实验，也不创建占位实现。
 
-1. **E01**：场景与问题真值、按场景族划分、Qwen2-VL 原模型推理、逐样本结果和汇总。
-2. **E02**：Spatial ID 与位置原型干预、读取来源的学习性复现。
-3. **E03**：共享加性/关系仿射比较、原生路径与留出响应预测。
-4. **E04（独立线）**：原生 K-cache 端口核对、联合求解、真实下游与强搜索基线。
-5. **E05**：围绕已形成的具体发现扩展自然图像和第二模型。
+## 已实现的入口
 
-当前已有 E01 工程冒烟闭环：三形状真值、横/竖布局、Instruct BF16 推理、原图/空白/颜色错配
-对照，以及逐问输出与汇总，见 [GPU 初调](gpu_smoke.md)。这些样本统一标为 `debug`，不构成
-正式 discovery/validation/test 划分。
-下一步继续补齐 E01 的场景族划分、网格和反事实覆盖，再进入 E02/E03；不先搭调度平台。
+模块均以 `reladdr.experiments.` 开头：
 
-运行记录约定见 [开发说明](development.md)，研究判断更新见
-[预期结果与决策](research/07_outcomes_and_decisions.md)。
+| 实验 | 模块／子命令 | 配置示例 |
+| --- | --- | --- |
+| B01_Behavioral_Baseline 正式基线 | `b01_behavioral_baseline` | `B01_Behavioral_Baseline.yaml` |
+| B01 工程检查 | `b01_behavioral_baseline.smoke` | `B01_Behavioral_Baseline__smoke.yaml` |
+| B02_Binding_Replication | `b02_binding_replication` | `B02_Binding_Replication.yaml` |
+| M01_Interface_Diagnostics | `m01_interface_diagnostics linear` / `grid` | `M01_Interface_Diagnostics__linear.yaml` / `__grid.yaml` |
+| M02_Path_Diagnostics | `m02_path_diagnostics mediation` / `freeze` | `M02_Path_Diagnostics__mediation.yaml` / `__freeze.yaml` |
+
+所有当前ID和协议版本按 [配置表](../configs/README.md) 使用新版；不保留旧模块、E编号配置别名或跳转协议。
+已完成run仍保留原配置／版本，历史科学结果对应原执行代码，不宣称新版入口已做过GPU复验。
+
+正式入口支持以下离线数据预检，不加载模型，会生成本地prepare-only run：
+
+```sh
+uv run --locked python -m reladdr.experiments.b01_behavioral_baseline configs/B01_Behavioral_Baseline.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.b02_binding_replication configs/B02_Binding_Replication.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.m01_interface_diagnostics linear configs/M01_Interface_Diagnostics__linear.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.m01_interface_diagnostics grid configs/M01_Interface_Diagnostics__grid.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.m02_path_diagnostics mediation configs/M02_Path_Diagnostics__mediation.yaml --prepare-only
+uv run --locked python -m reladdr.experiments.m02_path_diagnostics freeze configs/M02_Path_Diagnostics__freeze.yaml --prepare-only
+```
+
+工程smoke只在 [GPU初调](gpu_smoke.md) 的独立授权下运行，不提供伪造的prepare-only结果。
+参数校验与执行在各子包；共享三标签评分/移植在`_shared/patching.py`，原生端口仍由models/interventions集中维护。
+
+## 当前停点
+
+[B01旧 E01 discovery](reports/e01_discovery_2026-10-20.md) 与
+[B02/M01/M02旧 E02/E03](reports/e02_e03_2026-10-20.md) 的指标和来源保持不变。
+下一批先B03自然行为与M03端口验收，通过门槛后才做M04有限自然捕获。
+后续M05/M06需要实际消费接口；地址中继与S01集合搜索均不阻塞主线。

@@ -5,15 +5,16 @@
 布局：每张图有不同颜色的方形、圆形和三角形，真值来自生成时的对象与位置，不从模型答案反推。
 
 首轮实测见 [2026-10-19 GPU 初调记录](reports/gpu_smoke_2026-10-19.md)。
+正式基线另用 [E01 v1](research/protocols/B01_Behavioral_Baseline.md) 和 `e01_formal` 入口；旧 debug 协议保持不变。
 
 ## 完整环境的运行方式
 
 ```sh
 uv sync --locked --extra gpu
-uv run --locked --extra gpu python -m reladdr.experiments.e01 configs/e01_smoke.local.yaml
+uv run --locked --extra gpu python -m reladdr.experiments.b01_behavioral_baseline.smoke configs/B01_Behavioral_Baseline__smoke.local.yaml
 ```
 
-将 `configs/e01_smoke.yaml` 复制为忽略的 `.local.yaml`，填入本地 **Instruct** 模型路径和
+将 `configs/B01_Behavioral_Baseline__smoke.yaml` 复制为忽略的 `.local.yaml`，填入本地 **Instruct** 模型路径和
 实际 checkpoint 来源。模型只从本地读取，运行入口不会下载模型，也不自动改用 Base、CPU 或量化。
 示例的 `unverified-local-checkpoint` 明确表示尚未提供固定版本，不能据此声称模型版本已锁定。
 
@@ -57,7 +58,7 @@ uv run --locked --extra gpu python -m reladdr.experiments.e01 configs/e01_smoke.
 ```sh
 cd /root/autodl-tmp/reladdr
 /root/autodl-tmp/reladdr-tools/python/bin/uv run --locked --no-sync \
-  --python /root/miniconda3/bin/python python -m reladdr.experiments.e01 configs/e01_smoke.local.yaml
+  --python /root/miniconda3/bin/python python -m reladdr.experiments.b01_behavioral_baseline.smoke configs/B01_Behavioral_Baseline__smoke.local.yaml
 ```
 
 此环境使用 Python 3.12.3，而项目默认是 3.12.14；实际版本和分发包清单写入每次 metadata。
