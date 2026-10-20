@@ -38,5 +38,6 @@ uv run --locked python -m reladdr.experiments.m02_path_diagnostics freeze config
 
 [B01旧 E01 discovery](reports/e01_discovery_2026-10-20.md) 与
 [B02/M01/M02旧 E02/E03](reports/e02_e03_2026-10-20.md) 的指标和来源保持不变。
-下一批先B03自然行为与M03端口验收，通过门槛后才做M04有限自然捕获。
-后续M05/M06需要实际消费接口；地址中继与S01集合搜索均不阻塞主线。
+下一批按B03 v2统一原图与派生图归属，再用已有pre-O/MLP端口做M04捕获与局部确认。
+选定消费者后才补M05所需观测，并做有分歧预测的定向交叉；M06与M07形成辨识小循环。
+地址中继与S01集合搜索均不阻塞主线。
