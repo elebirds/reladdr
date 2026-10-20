@@ -5,7 +5,13 @@ import json
 import pytest
 import yaml
 
-from reladdr.experiments.e02 import Parameters, aliases, run_e02, scored, summarize
+from reladdr.experiments.b02_binding_replication.runner import (
+    Parameters,
+    aliases,
+    run_e02,
+    scored,
+    summarize,
+)
 from reladdr.runtime import ConfigError, load_config, read_run
 from reladdr.tasks.patching import PAPER_PALETTE, make_e02_pairs
 

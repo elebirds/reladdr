@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from reladdr.experiments.e03_path import mix_group, token_groups
+from reladdr.experiments.m02_path_diagnostics.mediation import mix_group, token_groups
 
 
 def test_groups_are_disjoint_and_cover_suffix():

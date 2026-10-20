@@ -4,7 +4,11 @@ import json
 
 import yaml
 
-from reladdr.experiments.e03 import Parameters, reverse_identifiable, run_e03
+from reladdr.experiments.m01_interface_diagnostics.linear import (
+    Parameters,
+    reverse_identifiable,
+    run_e03,
+)
 from reladdr.runtime import load_config
 from reladdr.tasks.patching import make_reference_move_pairs
 

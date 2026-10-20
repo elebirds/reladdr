@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from reladdr.evaluation.clustered import clustered_interval
-from reladdr.experiments.e01_formal import Parameters, run_formal
+from reladdr.experiments.b01_behavioral_baseline.runner import Parameters, run_formal
 from reladdr.runtime import ConfigError, load_config, read_run
 from reladdr.tasks.synthetic import PALETTE
 
