@@ -1,0 +1,32 @@
+# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
+schema_version: 1
+experiment:
+  id: E02
+  protocol_version: e02-adjacent-v1
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    image_size: 336
+    family_counts:
+      discovery: 8
+      validation: 4
+      test: 4
+    run_splits:
+    - validation
+    - test
+    settings:
+    - squares_horizontal
+    positions:
+    - readout
+    layers:
+    - 21
+    - 24
+    bootstrap_replicates: 1000
+run:
+  seed: 19
+  output_root: ../runs
+  label: e02-frozen-heldout
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: 'off'

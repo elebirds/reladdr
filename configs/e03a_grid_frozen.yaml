@@ -1,0 +1,33 @@
+# 冻结已有比较后确认独立留出，不根据结果重新挑选层和冻结范围。
+schema_version: 1
+experiment:
+  id: E03
+  protocol_version: e03a-grid-v1
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    image_size: 336
+    family_counts:
+      discovery: 8
+      validation: 4
+      test: 4
+    run_splits:
+    - validation
+    - test
+    settings:
+    - squares_grid2
+    positions:
+    - readout
+    - text_suffix
+    layers:
+    - 17
+    - 21
+    bootstrap_replicates: 1000
+run:
+  seed: 19
+  output_root: ../runs
+  label: e03a-grid2-frozen
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: 'off'

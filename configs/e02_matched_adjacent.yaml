@@ -1,0 +1,23 @@
+# 匹配 E03a 的 immediately 措辞，检查 E02 地址窗口是否仍存在。
+schema_version: 1
+experiment:
+  id: E02
+  protocol_version: e02-adjacent-v1
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    image_size: 336
+    family_counts: {discovery: 8, validation: 4, test: 4}
+    run_splits: [discovery]
+    settings: [squares_horizontal]
+    positions: [readout, question_end]
+    layers: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
+    bootstrap_replicates: 1000
+run:
+  seed: 19
+  output_root: ../runs
+  label: e02-matched-adjacent
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: "off"

@@ -1,0 +1,67 @@
+# 同图变化关系或参照，固定旧条件的组件写入，不改变视觉前缀。
+schema_version: 1
+experiment:
+  id: E03
+  protocol_version: e03b-conditional-freeze-v1
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    image_size: 336
+    family_counts:
+      discovery: 8
+      validation: 4
+      test: 4
+    run_splits:
+    - discovery
+    settings:
+    - squares_horizontal
+    - squares_grid2
+    positions:
+    - readout
+    - question_end
+    layers:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    bootstrap_replicates: 1000
+    selection_layers:
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+run:
+  seed: 19
+  output_root: ../runs
+  label: e03b-conditional-freeze
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: 'off'

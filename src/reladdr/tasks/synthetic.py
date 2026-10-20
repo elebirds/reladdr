@@ -79,9 +79,14 @@ def make_scenes(seed: int, families: int) -> list[Scene]:
 
 
 def render_scene(scene: Scene) -> Image.Image:
-    image = Image.new("RGB", (scene.size, scene.size), "white")
+    return render_objects(scene.objects, scene.size)
+
+
+def render_objects(objects: tuple[SceneObject, ...], size: int) -> Image.Image:
+    """共享对象绘制，保留旧三形状入口的像素规则和问题语义。"""
+    image = Image.new("RGB", (size, size), "white")
     draw = ImageDraw.Draw(image)
-    for obj in scene.objects:
+    for obj in objects:
         x0, y0, x1, y1 = obj.bbox
         color = PALETTE[obj.color]
         if obj.shape == "square":

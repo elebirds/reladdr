@@ -1,0 +1,25 @@
+# 执行 E01 v1 首批 discovery 基线；validation/test 预先保留，不用于试跑调参。
+schema_version: 1
+experiment:
+  id: E01
+  protocol_version: e01-v1
+  parameters:
+    model_path: ../checkpoints/Qwen2-VL-7B-Instruct
+    model_revision: unverified-local-checkpoint
+    system_prompt: "You are a helpful assistant. You respond in one token."
+    family_counts: {discovery: 8, validation: 4, test: 4}
+    run_splits: [discovery]
+    layouts: [horizontal, vertical, grid2, grid3, grid4]
+    templates: [relation_first, reference_first]
+    conditions: [original, blank, target_recolor, position_swap]
+    combination_seed: 20261020
+    max_new_tokens: 8
+    bootstrap_replicates: 1000
+run:
+  seed: 19
+  output_root: ../runs
+  label: e01-discovery
+tracking:
+  mode: local
+  params_metrics: false
+  artifacts: "off"

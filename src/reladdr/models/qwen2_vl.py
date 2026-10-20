@@ -25,7 +25,14 @@ def candidate_token_ids(
 
 
 class Qwen2VLAdapter:
-    def __init__(self, model_path: Path, *, max_new_tokens: int = 8):
+    def __init__(
+        self,
+        model_path: Path,
+        *,
+        max_new_tokens: int = 8,
+        system_prompt: str | None = None,
+        image_size: int = 448,
+    ):
         import torch
         import transformers
         from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
@@ -34,12 +41,13 @@ class Qwen2VLAdapter:
             raise RuntimeError("GPU 调试需要可用 CUDA，不自动退回 CPU 或量化")
         self.torch = torch
         self.max_new_tokens = max_new_tokens
+        self.system_prompt = system_prompt
         self.processor = AutoProcessor.from_pretrained(
             model_path,
             local_files_only=True,
             use_fast=False,
-            min_pixels=448 * 448,
-            max_pixels=448 * 448,
+            min_pixels=image_size * image_size,
+            max_pixels=image_size * image_size,
         )
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(
             model_path,
@@ -62,14 +70,20 @@ class Qwen2VLAdapter:
             "transformers": transformers.__version__,
             "cuda_runtime": torch.version.cuda,
             "processor_fast": False,
-            "min_pixels": 448 * 448,
-            "max_pixels": 448 * 448,
+            "system_prompt": system_prompt,
+            "min_pixels": image_size * image_size,
+            "max_pixels": image_size * image_size,
             "total_device_bytes": torch.cuda.get_device_properties(0).total_memory,
         }
 
-    def predict(self, image, prompt: str, *, candidate_aliases: dict[str, list[str]]) -> dict:
-        torch = self.torch
-        messages = [
+    def encode(self, image, prompt: str, *, candidate_aliases: dict[str, list[str]]):
+        """共享完全相同的消息模板和视觉预处理；返回实际展开后的输入。"""
+        # 仅新调用者显式指定系统提示；不改变现有 smoke 的消息序列。
+        messages = (
+            [{"role": "system", "content": self.system_prompt}]
+            if self.system_prompt is not None
+            else []
+        ) + [
             {
                 "role": "user",
                 "content": [
@@ -83,6 +97,11 @@ class Qwen2VLAdapter:
         )
         ids = candidate_token_ids(self.processor.tokenizer, text, candidate_aliases)
         inputs = self.processor(text=[text], images=[image], return_tensors="pt").to("cuda:0")
+        return inputs, text, ids
+
+    def predict(self, image, prompt: str, *, candidate_aliases: dict[str, list[str]]) -> dict:
+        torch = self.torch
+        inputs, _text, ids = self.encode(image, prompt, candidate_aliases=candidate_aliases)
         image_tokens = int((inputs.input_ids == self.model.config.image_token_id).sum().item())
         torch.cuda.synchronize()
         started = time.perf_counter()
