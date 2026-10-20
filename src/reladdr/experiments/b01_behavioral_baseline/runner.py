@@ -1,4 +1,4 @@
-"""执行 B01 正式行为基线，兼容 E01 的分组、视觉对照、模板和统计协议。"""
+"""执行 B01 正式行为基线，包括场景分组、视觉对照、模板和统计协议。"""
 
 import argparse
 import json
@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 from pydantic import Field, StrictInt, field_validator, model_validator
 
 from reladdr.evaluation.clustered import clustered_interval
-from reladdr.experiments.e01 import score_prediction
+from reladdr.experiments.b01_behavioral_baseline.smoke import score_prediction
 from reladdr.runtime import RunContext, load_config, resolve_path
 from reladdr.runtime.config import StrictModel
 from reladdr.tasks.relational import (
@@ -26,7 +26,7 @@ from reladdr.tasks.relational import (
 )
 from reladdr.tasks.synthetic import PALETTE, render_objects
 
-PROTOCOL_VERSION = "e01-v1"
+PROTOCOL_VERSION = "b01-v1"
 EXPERIMENT_ID = "B01_Behavioral_Baseline"
 
 
@@ -270,7 +270,7 @@ def summarize(rows, parameters, seed):
 
 def _report(summary):
     lines = [
-        "# E01 分组基线结果",
+        "# B01 分组基线结果",
         "",
         f"实际评估 {summary['n_predictions']} 条输入、"
         f"{summary['n_families_evaluated']} 个场景族；split："
@@ -297,11 +297,11 @@ def _report(summary):
 
 def run_formal(config, *, adapter_factory=None, prepare_only=False) -> Path:
     parameters = config.parameters
-    if config.document.experiment.id not in {"E01", EXPERIMENT_ID} or (
+    if config.document.experiment.id != EXPERIMENT_ID or (
         config.document.experiment.protocol_version != PROTOCOL_VERSION
     ):
         raise ValueError(
-            f"正式入口要求 experiment.id={EXPERIMENT_ID} 或 E01、protocol_version=e01-v1"
+            f"正式入口要求 experiment.id={EXPERIMENT_ID}、protocol_version={PROTOCOL_VERSION}"
         )
     scenes = make_grouped_scenes(
         config.document.run.seed, parameters.family_counts, parameters.layouts
@@ -312,7 +312,7 @@ def run_formal(config, *, adapter_factory=None, prepare_only=False) -> Path:
             "protocol",
             {
                 "stage": "P1",
-                "experiments": ["E01.1", "E01.2"],
+                "cases": ["recognition", "relational_reasoning"],
                 "generator": GENERATOR_VERSION,
                 "evaluation_executed": not prepare_only,
                 "run_splits": parameters.run_splits,
@@ -480,7 +480,7 @@ def run_formal(config, *, adapter_factory=None, prepare_only=False) -> Path:
                                     "evaluation.predictions_completed", len(analysis_rows)
                                 )
                                 run.logger.info(
-                                    "E01 进度 %s/%s，%s %s",
+                                    "B01 进度 %s/%s，%s %s",
                                     len(analysis_rows),
                                     planned * len(parameters.conditions),
                                     scene.layout,
@@ -503,7 +503,7 @@ def run_formal(config, *, adapter_factory=None, prepare_only=False) -> Path:
             run.artifacts.write_text(
                 "baseline/report.md",
                 _report(summary),
-                description="本次 E01 可读结果与适用条件",
+                description="本次 B01 可读结果与适用条件",
                 sync=True,
             )
         memory = adapter.peak_memory()
@@ -515,8 +515,8 @@ def run_formal(config, *, adapter_factory=None, prepare_only=False) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="B01 正式分组行为基线（兼容 E01 协议）")
-    parser.add_argument("config", help="B01 或兼容 E01 的私有配置")
+    parser = argparse.ArgumentParser(description="B01 正式分组行为基线")
+    parser.add_argument("config", help="B01 正式行为基线私有配置")
     parser.add_argument("--prepare-only", action="store_true", help="仅生成并验证数据，不加载模型")
     args = parser.parse_args()
     config = load_config(args.config, parameter_model=Parameters)

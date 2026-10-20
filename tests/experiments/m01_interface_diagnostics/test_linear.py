@@ -1,4 +1,4 @@
-"""验证 E03 反向配对只按真值可辨识性筛选，保留排除原因和多位置协议。"""
+"""验证 M01 反向配对只按真值可辨识性筛选，保留排除原因和多位置协议。"""
 
 import json
 
@@ -7,7 +7,7 @@ import yaml
 from reladdr.experiments.m01_interface_diagnostics.linear import (
     Parameters,
     reverse_identifiable,
-    run_e03,
+    run_linear,
 )
 from reladdr.runtime import load_config
 from reladdr.tasks.patching import make_reference_move_pairs
@@ -29,13 +29,13 @@ def test_reverse_pairs_recompute_truth_and_report_ambiguous_labels():
 
 
 def test_reverse_prepare_keeps_selection_receipt_and_never_loads_model(tmp_path):
-    path = tmp_path / "e03.yaml"
+    path = tmp_path / "m01.yaml"
     path.write_text(
         yaml.safe_dump(
             {
                 "experiment": {
-                    "id": "E03",
-                    "protocol_version": "e03a-v2",
+                    "id": "M01_Interface_Diagnostics",
+                    "protocol_version": "m01-adjacent-v1",
                     "parameters": {
                         "model_path": "test-only",
                         "model_revision": "test-only",
@@ -49,7 +49,7 @@ def test_reverse_prepare_keeps_selection_receipt_and_never_loads_model(tmp_path)
             }
         )
     )
-    directory = run_e03(load_config(path, parameter_model=Parameters), prepare_only=True)
+    directory = run_linear(load_config(path, parameter_model=Parameters), prepare_only=True)
     selection = json.loads((directory / "artifacts/dataset/selection.json").read_text())
     assert selection["reverse_pairs"]
     assert selection["selection_basis"] == "three_distinct_ground_truth_labels_only"

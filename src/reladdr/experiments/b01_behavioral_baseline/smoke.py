@@ -1,4 +1,4 @@
-"""执行 E01 的三形状工程冒烟：真实推理、图像对照和逐样本记录，不代替正式机制实验。"""
+"""执行 B01 的三形状工程冒烟：真实推理、图像对照和逐样本记录，不代替正式机制实验。"""
 
 import argparse
 import json
@@ -18,6 +18,9 @@ from reladdr.tasks.synthetic import (
     questions_for,
     render_scene,
 )
+
+EXPERIMENT_ID = "B01_Behavioral_Baseline"
+PROTOCOL_VERSION = "b01-engineering-v1"
 
 
 class Parameters(StrictModel):
@@ -60,6 +63,13 @@ def score_prediction(prediction: dict, answer: str, foil: str) -> dict:
 
 
 def run_baseline(config, *, adapter_factory=None) -> Path:
+    if (
+        config.document.experiment.id != EXPERIMENT_ID
+        or config.document.experiment.protocol_version != PROTOCOL_VERSION
+    ):
+        raise ValueError(
+            f"工程入口要求 experiment.id={EXPERIMENT_ID}、protocol_version={PROTOCOL_VERSION}"
+        )
     if adapter_factory is None:
         from reladdr.models.qwen2_vl import Qwen2VLAdapter
 
@@ -225,8 +235,8 @@ def run_baseline(config, *, adapter_factory=None) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="E01 工程冒烟，不执行机制干预")
-    parser.add_argument("config", help="E01 私有 YAML 配置")
+    parser = argparse.ArgumentParser(description="B01 工程冒烟，不执行机制干预")
+    parser.add_argument("config", help="B01 工程冒烟私有 YAML 配置")
     args = parser.parse_args()
     config = load_config(args.config, parameter_model=Parameters)
     directory = run_baseline(config)

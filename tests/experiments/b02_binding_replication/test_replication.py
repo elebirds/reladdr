@@ -1,29 +1,24 @@
-"""验证 E02 私有协议、离线准备及按族统计，不把模拟数值作为模型结果。"""
+"""验证 B02 私有协议、离线准备及按族统计，不把模拟数值作为模型结果。"""
 
 import json
 
 import pytest
 import yaml
 
-from reladdr.experiments.b02_binding_replication.runner import (
-    Parameters,
-    aliases,
-    run_e02,
-    scored,
-    summarize,
-)
+from reladdr.experiments._shared.patching import aliases, scored, summarize
+from reladdr.experiments.b02_binding_replication.runner import Parameters, run_replication
 from reladdr.runtime import ConfigError, load_config, read_run
 from reladdr.tasks.patching import PAPER_PALETTE, make_e02_pairs
 
 
 def config_at(tmp_path, **parameters):
-    source = tmp_path / "e02.yaml"
+    source = tmp_path / "b02.yaml"
     source.write_text(
         yaml.safe_dump(
             {
                 "experiment": {
-                    "id": "E02",
-                    "protocol_version": "e02-v1",
+                    "id": "B02_Binding_Replication",
+                    "protocol_version": "b02-directional-v1",
                     "parameters": {
                         "model_path": "no-model",
                         "model_revision": "test-only",
@@ -43,7 +38,7 @@ def test_prepare_only_keeps_heldout_and_never_constructs_model(tmp_path):
     def forbidden(*args, **kwargs):
         pytest.fail("must not load a model")
 
-    root = run_e02(config_at(tmp_path), prepare_only=True, adapter_factory=forbidden)
+    root = run_replication(config_at(tmp_path), prepare_only=True, adapter_factory=forbidden)
     assert not read_run(root)["metadata"]["details"]["protocol"]["evaluation_executed"]
     pairs = [
         json.loads(line)

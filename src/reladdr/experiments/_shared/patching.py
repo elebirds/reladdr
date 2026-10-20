@@ -50,7 +50,7 @@ class Parameters(StrictModel):
 
 
 def aliases(palette):
-    # R3 源码的四种拼写概率聚合；E01 原有双拼写协议不变。
+    # R3 源码的四种拼写概率聚合；B01 使用独立的双拼写协议。
     return {
         color: [color, color.capitalize(), " " + color, " " + color.capitalize()]
         for color in palette
@@ -137,16 +137,14 @@ def run_patching(
     adapter_factory=None,
     dataset_notes=None,
     full_state_check=False,
-    compatible_experiment_ids=(),
 ):
     """共用三标签替换和落盘；样本、实验编号及解释仍由各自协议拥有。"""
     p = config.parameters
     if (
-        config.document.experiment.id not in {experiment_id, *compatible_experiment_ids}
+        config.document.experiment.id != experiment_id
         or config.document.experiment.protocol_version != protocol_version
     ):
         raise ValueError("实验入口与声明协议不匹配")
-    # 兼容编号只参与校验；配置与 run 元数据始终保留调用者声明的原始 ID。
     active = [pair for pair in pairs if pair.split in p.run_splits]
     with RunContext(config) as run:
         run.record_metadata(

@@ -1,4 +1,4 @@
-"""执行 M02 后缀分组中介，区分充分恢复与必要恢复，兼容 E03b 协议。"""
+"""执行 M02 后缀分组中介，测量同一恢复效应的语义组依赖。"""
 
 import argparse
 import json
@@ -23,9 +23,9 @@ class Parameters(PatchingParameters):
     @model_validator(mode="after")
     def check_task_scope(self):
         if self.settings != ["squares_horizontal"]:
-            raise ValueError("当前 E03b 只定义 Squares 横排协议")
+            raise ValueError("M02 后缀中介只定义 Squares 横排协议")
         if self.positions != ["readout", "question_end"]:
-            raise ValueError("E03b 使用固定语义分组，不接受 E02 的 positions 调参")
+            raise ValueError("M02 后缀中介使用固定语义分组，不接受 positions 调参")
         return self
 
 
@@ -100,10 +100,10 @@ def summarize(rows, seed, replicates):
 def run_path(config, *, prepare_only=False):
     p = config.parameters
     if (
-        config.document.experiment.id not in {"E03", EXPERIMENT_ID}
-        or config.document.experiment.protocol_version != "e03b-mediation-v1"
+        config.document.experiment.id != EXPERIMENT_ID
+        or config.document.experiment.protocol_version != "m02-suffix-mediation-v1"
     ):
-        raise ValueError("原生后缀路径入口要求明确 E03b 中介协议")
+        raise ValueError("原生后缀路径入口要求明确 M02 后缀中介协议")
     pairs = make_reference_move_pairs(config.document.run.seed, p.family_counts, adjacent=True)
     active = [pair for pair in pairs if pair.split in p.run_splits]
     with RunContext(config) as run:
@@ -111,7 +111,7 @@ def run_path(config, *, prepare_only=False):
             "protocol",
             {
                 "stage": "P2",
-                "step": "E03b token-group mediation",
+                "case": "suffix_mediation",
                 "evaluation_executed": not prepare_only,
                 "source_result": "20261020T052256208276Z-e03a-suffix-control-c4167205",
                 "group_only": "donor group; recipient remaining suffix",
@@ -238,7 +238,7 @@ def run_path(config, *, prepare_only=False):
                                 }
                             )
                 run.logger.info(
-                    "E03b 中介 %s/%s，基线正确=%s", index + 1, len(active), baseline_correct
+                    "M02 中介 %s/%s，基线正确=%s", index + 1, len(active), baseline_correct
                 )
         run.artifacts.register(
             "mediation/predictions.jsonl", description="充分/必要两类分组中介的逐对真实输出"
@@ -261,7 +261,7 @@ def run_path(config, *, prepare_only=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="M02 后缀分组中介（兼容 E03b mediation 协议）")
+    parser = argparse.ArgumentParser(description="M02 后缀分组中介")
     parser.add_argument("config")
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()

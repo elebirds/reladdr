@@ -1,8 +1,8 @@
-# 匹配 E03a 的 immediately 措辞，检查 E02 地址窗口是否仍存在。
+# 匹配 M01 的 immediately 措辞，检查 B02 地址窗口是否仍存在。
 schema_version: 1
 experiment:
-  id: E02
-  protocol_version: e02-adjacent-v1
+  id: B02_Binding_Replication
+  protocol_version: b02-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -16,7 +16,7 @@ experiment:
 run:
   seed: 19
   output_root: ../runs
-  label: e02-matched-adjacent
+  label: b02_binding_replication-adjacent
 tracking:
   mode: local
   params_metrics: false

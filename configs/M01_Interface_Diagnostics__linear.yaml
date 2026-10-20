@@ -1,8 +1,8 @@
-# 保留 E03a v1 歧义诊断；边缘参照的 left/right of 不唯一，不作主机制检验。
+# 检验 M01：相同语言指令下参照移位，三个结果标签仍两两不同。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03a-v1
+  id: M01_Interface_Diagnostics
+  protocol_version: m01-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -16,7 +16,7 @@ experiment:
 run:
   seed: 19
   output_root: ../runs
-  label: e03a-reference-move
+  label: m01_interface_diagnostics-linear
 tracking:
   mode: local
   params_metrics: false

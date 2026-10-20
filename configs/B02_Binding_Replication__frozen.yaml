@@ -1,8 +1,8 @@
-# 冻结已有比较后确认独立留出，不根据结果重新挑选层和冻结范围。
+# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03a-grid-v1
+  id: B02_Binding_Replication
+  protocol_version: b02-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -15,18 +15,17 @@ experiment:
     - validation
     - test
     settings:
-    - squares_grid2
+    - squares_horizontal
     positions:
     - readout
-    - text_suffix
     layers:
-    - 17
     - 21
+    - 24
     bootstrap_replicates: 1000
 run:
   seed: 19
   output_root: ../runs
-  label: e03a-grid2-frozen
+  label: b02_binding_replication-frozen
 tracking:
   mode: local
   params_metrics: false

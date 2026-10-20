@@ -1,4 +1,4 @@
-"""用明确标注的离线适配器验证正式 E01 的划分、记录、统计和故障保存，不伪造 GPU 证据。"""
+"""用明确标注的离线适配器验证正式 B01 的划分、记录、统计和故障保存，不伪造 GPU 证据。"""
 
 import json
 
@@ -33,8 +33,8 @@ def make_config(tmp_path, **parameters):
         yaml.safe_dump(
             {
                 "experiment": {
-                    "id": "E01",
-                    "protocol_version": "e01-v1",
+                    "id": "B01_Behavioral_Baseline",
+                    "protocol_version": "b01-v1",
                     "parameters": {
                         "model_path": "controlled-model",
                         "model_revision": "controlled-test-only",

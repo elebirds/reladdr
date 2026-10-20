@@ -1,8 +1,8 @@
-# 执行 E02 主复现：前作 Squares 几何与调色板，生成末位置为主、问题末词为对照。
+# 执行 B02 主复现：前作 Squares 几何与调色板，生成末位置为主、问题末词为对照。
 schema_version: 1
 experiment:
-  id: E02
-  protocol_version: e02-v1
+  id: B02_Binding_Replication
+  protocol_version: b02-directional-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -16,7 +16,7 @@ experiment:
 run:
   seed: 19
   output_root: ../runs
-  label: e02-squares-discovery
+  label: b02_binding_replication
 tracking:
   mode: local
   params_metrics: false

@@ -1,8 +1,8 @@
-# 同图变化关系或参照，固定旧条件的组件写入，不改变视觉前缀。
+# 检查单末位置失败是否由其他语言后缀状态抵消。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03b-conditional-freeze-v1
+  id: M01_Interface_Diagnostics
+  protocol_version: m01-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -15,10 +15,9 @@ experiment:
     - discovery
     settings:
     - squares_horizontal
-    - squares_grid2
     positions:
     - readout
-    - question_end
+    - text_suffix
     layers:
     - 0
     - 1
@@ -49,18 +48,10 @@ experiment:
     - 26
     - 27
     bootstrap_replicates: 1000
-    selection_layers:
-    - 16
-    - 17
-    - 18
-    - 19
-    - 20
-    - 21
-    - 22
 run:
   seed: 19
   output_root: ../runs
-  label: e03b-conditional-freeze
+  label: m01_interface_diagnostics-suffix
 tracking:
   mode: local
   params_metrics: false

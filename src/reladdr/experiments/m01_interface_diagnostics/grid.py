@@ -1,4 +1,4 @@
-"""执行 M01 二维同指令参照移位，排除地址标签与参照颜色重叠，兼容 E03a。"""
+"""执行 M01 二维同指令参照移位，排除地址标签与参照颜色重叠。"""
 
 import argparse
 
@@ -28,8 +28,7 @@ def run_grid(config, *, prepare_only=False, adapter_factory=None):
         config,
         pairs,
         experiment_id=EXPERIMENT_ID,
-        compatible_experiment_ids=("E03",),
-        protocol_version="e03a-grid-v1",
+        protocol_version="m01-grid-v1",
         stage="P2",
         prepare_only=prepare_only,
         adapter_factory=adapter_factory,
@@ -44,7 +43,7 @@ def run_grid(config, *, prepare_only=False, adapter_factory=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="M01 二维接口诊断（兼容 E03a grid 协议）")
+    parser = argparse.ArgumentParser(description="M01 二维接口诊断")
     parser.add_argument("config")
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()

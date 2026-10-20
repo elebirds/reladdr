@@ -1,8 +1,8 @@
-# 执行 E01 v1 首批 discovery 基线；validation/test 预先保留，不用于试跑调参。
+# 执行 B01 v1 首批 discovery 基线；validation/test 预先保留，不用于试跑调参。
 schema_version: 1
 experiment:
-  id: E01
-  protocol_version: e01-v1
+  id: B01_Behavioral_Baseline
+  protocol_version: b01-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -18,7 +18,7 @@ experiment:
 run:
   seed: 19
   output_root: ../runs
-  label: e01-discovery
+  label: b01_behavioral_baseline
 tracking:
   mode: local
   params_metrics: false

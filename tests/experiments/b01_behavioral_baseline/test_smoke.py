@@ -1,11 +1,15 @@
-"""以受控适配器验证 E01 记录闭环；GPU 结果必须由真实服务器另行取得。"""
+"""以受控适配器验证 B01 工程冒烟的记录闭环；GPU 结果必须另行取得。"""
 
 import json
 from pathlib import Path
 
 import pytest
 
-from reladdr.experiments.e01 import Parameters, run_baseline, score_prediction
+from reladdr.experiments.b01_behavioral_baseline.smoke import (
+    Parameters,
+    run_baseline,
+    score_prediction,
+)
 from reladdr.models.qwen2_vl import candidate_token_ids
 from reladdr.runtime import ConfigError, load_config, read_run
 from reladdr.tasks.synthetic import PALETTE
@@ -30,13 +34,13 @@ class ControlledAdapter:
 def make_config(tmp_path, conditions=None):
     import yaml
 
-    path = tmp_path / "e01.yaml"
+    path = tmp_path / "smoke.yaml"
     path.write_text(
         yaml.safe_dump(
             {
                 "experiment": {
-                    "id": "E01_smoke",
-                    "protocol_version": "1",
+                    "id": "B01_Behavioral_Baseline",
+                    "protocol_version": "b01-engineering-v1",
                     "parameters": {
                         "model_path": "models/local",
                         "model_revision": "controlled-test-only",
@@ -51,7 +55,7 @@ def make_config(tmp_path, conditions=None):
     return load_config(path, parameter_model=Parameters)
 
 
-def test_e01_records_images_truth_outputs_and_separate_control_semantics(tmp_path):
+def test_smoke_records_images_truth_outputs_and_separate_control_semantics(tmp_path):
     config = make_config(tmp_path)
     directory = run_baseline(config, adapter_factory=ControlledAdapter)
     record = read_run(directory)

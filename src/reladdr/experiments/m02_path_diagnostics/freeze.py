@@ -1,4 +1,4 @@
-"""执行 M02 条件写入冻结，检验新关系/参照对在线组件变化的依赖，兼容 E03b。"""
+"""执行 M02 条件写入冻结，检验新关系/参照对在线组件变化的依赖。"""
 
 import argparse
 import json
@@ -109,8 +109,8 @@ def summarize(rows, seed, replicates):
 def run_freeze(config, *, prepare_only=False):
     p = config.parameters
     if (
-        config.document.experiment.id not in {"E03", EXPERIMENT_ID}
-        or config.document.experiment.protocol_version != "e03b-conditional-freeze-v1"
+        config.document.experiment.id != EXPERIMENT_ID
+        or config.document.experiment.protocol_version != "m02-conditional-freeze-v1"
     ):
         raise ValueError("要求明确在线条件写入冻结协议")
     cases = [
@@ -238,7 +238,7 @@ def run_freeze(config, *, prepare_only=False):
                     description="实际 token 与冻结范围",
                 )
                 run.logger.info(
-                    "E03b 在线写入冻结 %s/%s，%s，基线正确=%s",
+                    "M02 在线写入冻结 %s/%s，%s，基线正确=%s",
                     index + 1,
                     len(active),
                     contrast,
@@ -265,7 +265,7 @@ def run_freeze(config, *, prepare_only=False):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="M02 条件写入冻结（兼容 E03b freeze 协议）")
+    parser = argparse.ArgumentParser(description="M02 条件写入冻结")
     parser.add_argument("config")
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()

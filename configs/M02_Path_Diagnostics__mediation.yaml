@@ -1,8 +1,8 @@
-# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
+# 沿已恢复的 suffix 路径定位充分/必要的 token 组，不预设目标在末 token。
 schema_version: 1
 experiment:
-  id: E02
-  protocol_version: e02-adjacent-v1
+  id: M02_Path_Diagnostics
+  protocol_version: m02-suffix-mediation-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -12,20 +12,23 @@ experiment:
       validation: 4
       test: 4
     run_splits:
-    - validation
-    - test
+    - discovery
     settings:
     - squares_horizontal
     positions:
     - readout
+    - question_end
     layers:
-    - 21
-    - 24
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
     bootstrap_replicates: 1000
 run:
   seed: 19
   output_root: ../runs
-  label: e02-frozen-heldout
+  label: m02_path_diagnostics-mediation
 tracking:
   mode: local
   params_metrics: false

@@ -1,4 +1,4 @@
-"""执行 M01 一维接口诊断：相同语言指令下改变图中参照位置，兼容 E03a。"""
+"""执行 M01 一维接口诊断：相同语言指令下改变图中参照位置。"""
 
 import argparse
 from dataclasses import replace
@@ -19,7 +19,7 @@ class Parameters(PatchingParameters):
     @model_validator(mode="after")
     def check_task_scope(self):
         if self.settings != ["squares_horizontal"]:
-            raise ValueError("当前 E03a 只定义 Squares 横排协议，不能静默切换 setting")
+            raise ValueError("M01 一维入口只定义 Squares 横排协议，不能静默切换 setting")
         return self
 
 
@@ -57,12 +57,14 @@ def reverse_identifiable(pairs):
     return retained, excluded
 
 
-def run_e03(config, *, prepare_only=False, adapter_factory=None):
+def run_linear(config, *, prepare_only=False, adapter_factory=None):
     protocol = config.document.experiment.protocol_version
-    if protocol not in {"e03a-v1", "e03a-v2"}:
-        raise ValueError("E03a 入口要求明确 v1 directional 或 v2 adjacent 协议")
+    if protocol not in {"m01-directional-v1", "m01-adjacent-v1"}:
+        raise ValueError("M01 一维入口要求明确 directional 或 adjacent 协议")
     pairs = make_reference_move_pairs(
-        config.document.run.seed, config.parameters.family_counts, adjacent=protocol == "e03a-v2"
+        config.document.run.seed,
+        config.parameters.family_counts,
+        adjacent=protocol == "m01-adjacent-v1",
     )
     excluded = []
     if config.parameters.reverse_pairs:
@@ -71,7 +73,6 @@ def run_e03(config, *, prepare_only=False, adapter_factory=None):
         config,
         pairs,
         experiment_id=EXPERIMENT_ID,
-        compatible_experiment_ids=("E03",),
         protocol_version=protocol,
         stage="P2",
         prepare_only=prepare_only,
@@ -86,12 +87,12 @@ def run_e03(config, *, prepare_only=False, adapter_factory=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="M01 一维同指令参照移位（兼容 E03a）")
+    parser = argparse.ArgumentParser(description="M01 一维同指令参照移位")
     parser.add_argument("config")
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()
     print(
-        run_e03(
+        run_linear(
             load_config(args.config, parameter_model=Parameters), prepare_only=args.prepare_only
         )
     )

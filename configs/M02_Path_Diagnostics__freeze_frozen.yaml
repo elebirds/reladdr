@@ -1,8 +1,8 @@
-# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
+# 冻结已有比较后确认独立留出，不根据结果重新挑选层和冻结范围。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03a-v2
+  id: M02_Path_Diagnostics
+  protocol_version: m02-conditional-freeze-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -16,9 +16,10 @@ experiment:
     - test
     settings:
     - squares_horizontal
+    - squares_grid2
     positions:
     - readout
-    - text_suffix
+    - question_end
     layers:
     - 0
     - 1
@@ -49,10 +50,18 @@ experiment:
     - 26
     - 27
     bootstrap_replicates: 1000
+    selection_layers:
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
 run:
   seed: 19
   output_root: ../runs
-  label: e03a-frozen-heldout
+  label: m02_path_diagnostics-freeze_frozen
 tracking:
   mode: local
   params_metrics: false

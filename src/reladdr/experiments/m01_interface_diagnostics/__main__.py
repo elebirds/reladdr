@@ -10,7 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description="M01_Interface_Diagnostics：已实现的接口诊断")
     commands = parser.add_subparsers(dest="variant", required=True)
     for name, module, runner, description in (
-        ("linear", linear, linear.run_e03, "一维同指令参照移位"),
+        ("linear", linear, linear.run_linear, "一维同指令参照移位"),
         ("grid", grid, grid.run_grid, "二维参照移位，排除参照色重叠"),
     ):
         command = commands.add_parser(name, help=description, description=description)

@@ -1,8 +1,8 @@
-# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
+# 反向移植相同场景对；仅真值三标签可区分的配对纳入。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03b-mediation-v1
+  id: M01_Interface_Diagnostics
+  protocol_version: m01-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -12,21 +12,47 @@ experiment:
       validation: 4
       test: 4
     run_splits:
-    - validation
-    - test
+    - discovery
     settings:
     - squares_horizontal
     positions:
     - readout
-    - question_end
+    - text_suffix
     layers:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
     - 17
     - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
     bootstrap_replicates: 1000
+    reverse_pairs: true
 run:
   seed: 19
   output_root: ../runs
-  label: e03b-frozen-heldout
+  label: m01_interface_diagnostics-reverse
 tracking:
   mode: local
   params_metrics: false

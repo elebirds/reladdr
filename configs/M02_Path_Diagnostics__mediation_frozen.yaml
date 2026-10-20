@@ -1,8 +1,8 @@
-# 沿已恢复的 suffix 路径定位充分/必要的 token 组，不预设目标在末 token。
+# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03b-mediation-v1
+  id: M02_Path_Diagnostics
+  protocol_version: m02-suffix-mediation-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -12,23 +12,21 @@ experiment:
       validation: 4
       test: 4
     run_splits:
-    - discovery
+    - validation
+    - test
     settings:
     - squares_horizontal
     positions:
     - readout
     - question_end
     layers:
-    - 16
     - 17
     - 18
-    - 19
-    - 20
     bootstrap_replicates: 1000
 run:
   seed: 19
   output_root: ../runs
-  label: e03b-token-mediation
+  label: m02_path_diagnostics-mediation_frozen
 tracking:
   mode: local
   params_metrics: false

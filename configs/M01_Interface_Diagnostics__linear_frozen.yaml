@@ -1,8 +1,8 @@
-# 检查单末位置失败是否由其他语言后缀状态抵消。
+# 冻结 discovery 已选比较后才运行留出族；不据此重新挑层或改提示。
 schema_version: 1
 experiment:
-  id: E03
-  protocol_version: e03a-v2
+  id: M01_Interface_Diagnostics
+  protocol_version: m01-adjacent-v1
   parameters:
     model_path: ../checkpoints/Qwen2-VL-7B-Instruct
     model_revision: unverified-local-checkpoint
@@ -12,7 +12,8 @@ experiment:
       validation: 4
       test: 4
     run_splits:
-    - discovery
+    - validation
+    - test
     settings:
     - squares_horizontal
     positions:
@@ -51,7 +52,7 @@ experiment:
 run:
   seed: 19
   output_root: ../runs
-  label: e03a-suffix-control
+  label: m01_interface_diagnostics-linear_frozen
 tracking:
   mode: local
   params_metrics: false
